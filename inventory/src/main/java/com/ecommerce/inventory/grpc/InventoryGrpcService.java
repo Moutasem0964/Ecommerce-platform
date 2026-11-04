@@ -20,6 +20,8 @@ import com.ecommerce.inventory.grpc.v1.ReserveStockResponse;
 import com.ecommerce.inventory.stock.InsufficientStockException;
 import com.ecommerce.inventory.stock.ReservationConflictException;
 import com.ecommerce.inventory.stock.StockItem;
+import com.ecommerce.inventory.grpc.v1.ReleaseStockRequest;
+import com.ecommerce.inventory.grpc.v1.ReleaseStockResponse;
 
 @Service
 public class InventoryGrpcService extends InventoryServiceGrpc.InventoryServiceImplBase {
@@ -86,6 +88,23 @@ public class InventoryGrpcService extends InventoryServiceGrpc.InventoryServiceI
             observer.onError(Status.FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
         } catch (ReservationConflictException e) {
             observer.onError(Status.ALREADY_EXISTS.withDescription(e.getMessage()).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void releaseStock(ReleaseStockRequest request, StreamObserver<ReleaseStockResponse> observer) {
+        try {
+            boolean released = stockService.release(request.getOrderId());
+
+            observer.onNext(ReleaseStockResponse.newBuilder()
+                    .setOrderId(request.getOrderId())
+                    .setStatus(released
+                            ? ReservationStatus.RESERVATION_STATUS_RELEASED
+                            : ReservationStatus.RESERVATION_STATUS_NOT_FOUND)
+                    .build());
+            observer.onCompleted();
+        } catch (IllegalArgumentException e) {
+            observer.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         }
     }
 }

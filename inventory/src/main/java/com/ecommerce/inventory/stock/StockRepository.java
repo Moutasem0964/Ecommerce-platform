@@ -84,4 +84,21 @@ class StockRepository {
                         -> new StockItem(rs.getLong("product_id"), rs.getInt("quantity")))
                 .list();
     }
+
+    void increment(long productId, int quantity) {
+        jdbc.sql("""
+                UPDATE stock
+                   SET available_quantity = available_quantity + :qty, updated_at = now()
+                 WHERE product_id = :id
+                """)
+                .param("id", productId)
+                .param("qty", quantity)
+                .update();
+    }
+
+    void markReleased(long orderId) {
+        jdbc.sql("UPDATE reservations SET status = 'RELEASED', updated_at = now() WHERE order_id = :id")
+                .param("id", orderId)
+                .update();
+    }
 }

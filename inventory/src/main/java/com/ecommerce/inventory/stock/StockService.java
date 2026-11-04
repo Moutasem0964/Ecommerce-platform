@@ -122,4 +122,25 @@ public class StockService {
         }
         return message.toString();
     }
+
+    @Transactional
+    public boolean release(long orderId) {
+        if (orderId <= 0) {
+            throw new IllegalArgumentException("order_id must be positive");
+        }
+
+        String status = repository.lockReservationStatus(orderId).orElse(null);
+        if (status == null) {
+            return false;
+        }
+        if (status.equals("RELEASED")) {
+            return true;
+        }
+
+        for (StockItem item : repository.findItems(orderId)) {
+            repository.increment(item.productId(), item.quantity());
+        }
+        repository.markReleased(orderId);
+        return true;
+    }
 }
