@@ -82,6 +82,16 @@ services:
       retries: 20
     networks: [backend]
 
+  # ---------- Contract tooling (not started by "up"; run on demand) ----------
+  #   docker compose run --rm buf lint
+  #   docker compose run --rm buf generate
+  buf:
+    image: bufbuild/buf:1.75.0
+    profiles: ["tools"]
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+
 volumes:
   mysql-data:
   postgres-data:

@@ -1,0 +1,10 @@
+# PHP client code for Laravel, generated from proto/ into app/generated/.
+# Run:  docker compose run --rm buf generate
+# (Java code is generated automatically by the Maven build in inventory/.)
+version: v2
+clean: true
+plugins:
+  - remote: buf.build/protocolbuffers/php:v36.2
+    out: app/generated
+  - remote: buf.build/grpc/php:v1.85.1
+    out: app/generated

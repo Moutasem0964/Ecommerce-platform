@@ -1,0 +1,10 @@
+# gRPC contract tooling. Lint + breaking-change rules for everything in proto/.
+version: v2
+modules:
+  - path: proto
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE
