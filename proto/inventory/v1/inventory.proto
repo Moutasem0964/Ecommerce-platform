@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+// Contract between the main app (Laravel, gRPC client) and the
+// inventory service (Spring Boot, gRPC server).
+//
+// Evolution rules: only ADD fields; never renumber or reuse a field number;
+// mark removed fields as `reserved`. Breaking changes go to inventory.v2.
+
+package inventory.v1;
+
+option java_multiple_files = true;
+option java_package = "com.ecommerce.inventory.grpc.v1";
+option java_outer_classname = "InventoryProto";
+option php_namespace = "Proto\\Inventory\\V1";
+option php_metadata_namespace = "Proto\\GPBMetadata\\Inventory\\V1";
+
+// Owns stock quantities and order reservations.
+//
+// Errors are returned as gRPC status codes, never as fields in a response:
+//   INVALID_ARGUMENT    - bad input (empty list, quantity <= 0, duplicate product ids)
+//   FAILED_PRECONDITION - not enough stock for at least one item (message lists them)
+//   ALREADY_EXISTS      - order_id was already used for a DIFFERENT set of items
+//   UNAVAILABLE / DEADLINE_EXCEEDED - service down or too slow (raised by gRPC itself)
+
+service InventoryService {
+  // Available quantity for many products in one call (product list page).
+  // Products the service has never seen are returned with available_quantity = 0.
+
+  rpc GetStock(GetStockRequest) returns (GetStockResponse);
+
+  // Admin: set the absolute available quantity of one product.
+  // Calling it twice with the same values gives the same result (idempotent).
+
+  rpc SetStock(SetStockRequest) returns (SetStockResponse);
+
+  // Reserve every item of an order, all-or-nothing, atomically.
+  // order_id is the idempotency key: repeating the same request is safe and
+  // returns RESERVATION_STATUS_RESERVED without reserving twice.
+
+  rpc ReserveStock(ReserveStockRequest) returns (ReserveStockResponse);
+
+  // Give back everything reserved for an order (saga compensation).
+  // Idempotent: releasing twice, or releasing an unknown order, is not an error.
+
+  rpc ReleaseStock(ReleaseStockRequest) returns (ReleaseStockResponse);
+}
+
+//  Shared 
+
+message ProductStock {
+  int64 product_id = 1;
+  int32 available_quantity = 2;
+}
+
+message ReservationItem {
+  int64 product_id = 1;
+  int32 quantity = 2;
+}
+
+enum ReservationStatus {
+  RESERVATION_STATUS_UNSPECIFIED = 0;
+  // Stock is held for the order.
+  RESERVATION_STATUS_RESERVED = 1;
+  // Stock was returned to inventory.
+  RESERVATION_STATUS_RELEASED = 2;
+  // No reservation exists for this order (nothing to release).
+  RESERVATION_STATUS_NOT_FOUND = 3;
+}
+
+//  GetStock 
+
+message GetStockRequest {
+  repeated int64 product_ids = 1;
+}
+
+message GetStockResponse {
+  repeated ProductStock items = 1;
+}
+
+//  SetStock 
+
+message SetStockRequest {
+  int64 product_id = 1;
+  int32 quantity = 2;
+}
+
+message SetStockResponse {
+  ProductStock stock = 1;
+}
+
+//  ReserveStock 
+
+message ReserveStockRequest {
+  int64 order_id = 1;
+  repeated ReservationItem items = 2;
+}
+
+message ReserveStockResponse {
+  int64 order_id = 1;
+  ReservationStatus status = 2;
+}
+
+//  ReleaseStock 
+
+message ReleaseStockRequest {
+  int64 order_id = 1;
+}
+
+message ReleaseStockResponse {
+  int64 order_id = 1;
+  ReservationStatus status = 2;
+}
