@@ -1,5 +1,6 @@
 # Spring Boot inventory service. Build context = REPO ROOT (so proto/ is visible).
 # Stage 1: build with the Maven Wrapper (Maven version pinned in inventory/.mvn)
+# The ~/.m2 cache mount keeps downloaded libraries between builds, even when pom.xml changes.
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /workspace/inventory
 
@@ -9,11 +10,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl unzip \
 
 COPY inventory/.mvn .mvn
 COPY inventory/mvnw inventory/pom.xml ./
-RUN chmod +x mvnw && ./mvnw -B -q dependency:go-offline
+RUN --mount=type=cache,target=/root/.m2 chmod +x mvnw && ./mvnw -B -q dependency:go-offline
 
 COPY proto /workspace/proto
 COPY inventory/src src
-RUN ./mvnw -B -q package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q package -DskipTests
 
 # Stage 2: small runtime image, JRE only, non-root user
 FROM eclipse-temurin:21-jre
