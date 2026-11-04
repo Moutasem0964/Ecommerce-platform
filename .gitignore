@@ -1,0 +1,5 @@
+# Root-level only. app/ and inventory/ bring their own .gitignore.
+.env
+.idea/
+.vscode/
+*.zip
