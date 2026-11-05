@@ -40,7 +40,6 @@ class ApiExceptionRenderer
         };
     }
 
-    /** 403, 404, 405, 429 ... thrown by Laravel/Symfony (also covers model-not-found and authorization). */
     private function fromHttpException(HttpExceptionInterface $e): JsonResponse
     {
         $status = $e->getStatusCode();
