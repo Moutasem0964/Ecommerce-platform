@@ -12,7 +12,7 @@ use Illuminate\Console\Command;
 
 class ReleaseStaleOrders extends Command
 {
-    protected $signature = 'orders:release-stale {--minutes=5 : Only orders pending longer than this}';
+    protected $signature = 'orders:release-stale {--minutes=1 : Only orders pending longer than this}';
 
     protected $description = 'Release stock held by orders stuck in pending and mark them failed';
 

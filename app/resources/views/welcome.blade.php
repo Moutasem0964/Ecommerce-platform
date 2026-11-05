@@ -1,223 +1,1783 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سوق التقنية</title>
+    <!-- استيراد خط تجوال العربي و Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Tajawal', system-ui, -apple-system, sans-serif; background-color: #f8fafc; color: #0f172a; margin: 0; }
+        code, pre, .font-mono { font-family: 'Fira Code', monospace; }
+        
+        .page-tab { display: none; }
+        .page-tab.active { display: block; }
+        .app-modal { display: none; }
+        .app-modal.active { display: flex; }
+        
+        .nav-btn.active { color: #2563eb; background-color: #eff6ff; font-weight: 700; }
+        .category-chip.active { background-color: #2563eb; color: #ffffff; border-color: #2563eb; }
+        
+        button { cursor: pointer; font-family: inherit; }
+        button:disabled { cursor: not-allowed; opacity: 0.5; }
+        input, select, textarea { font-family: inherit; }
+        
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        @media print {
+            body * { visibility: hidden !important; }
+            #modalOrderDetails, #modalOrderDetails * { visibility: visible !important; }
+            #modalOrderDetails {
+                position: absolute !important;
+                inset: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                max-height: none !important;
+                display: block !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            #modalOrderDetails button { display: none !important; }
+            #modalOrderDetails .overflow-y-auto { overflow: visible !important; max-height: none !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
 
-        @fonts
+    <!-- شريط التنقل الرئيسي (Header) -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="h-16 flex items-center justify-between gap-4">
+                
+                <!-- الشعار وهوية المتجر -->
+                <div class="flex items-center gap-6">
+                    <div class="cursor-pointer" onclick="switchTab('catalog')">
+                        <span class="text-xl font-black text-slate-900 tracking-tight">سوق التقنية</span>
+                    </div>
 
-        <!-- Styles / Scripts -->
-        @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-            @vite(['resources/css/app.css', 'resources/js/app.js'])
-        @else
-            <style>
-                /*! tailwindcss v4.0.7 | MIT License | https://tailwindcss.com */ @layer properties{@supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))){*,:before,:after,::backdrop{--tw-translate-x:0;--tw-translate-y:0;--tw-translate-z:0;--tw-rotate-x:initial;--tw-rotate-y:initial;--tw-rotate-z:initial;--tw-skew-x:initial;--tw-skew-y:initial;--tw-space-x-reverse:0;--tw-border-style:solid;--tw-leading:initial;--tw-font-weight:initial;--tw-tracking:initial;--tw-shadow:0 0 #0000;--tw-shadow-color:initial;--tw-shadow-alpha:100%;--tw-inset-shadow:0 0 #0000;--tw-inset-shadow-color:initial;--tw-inset-shadow-alpha:100%;--tw-ring-color:initial;--tw-ring-shadow:0 0 #0000;--tw-inset-ring-color:initial;--tw-inset-ring-shadow:0 0 #0000;--tw-ring-inset:initial;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-offset-shadow:0 0 #0000;--tw-blur:initial;--tw-brightness:initial;--tw-contrast:initial;--tw-grayscale:initial;--tw-hue-rotate:initial;--tw-invert:initial;--tw-opacity:initial;--tw-saturate:initial;--tw-sepia:initial;--tw-drop-shadow:initial;--tw-drop-shadow-color:initial;--tw-drop-shadow-alpha:100%;--tw-drop-shadow-size:initial;--tw-duration:initial;--tw-ease:initial;--tw-content:""}}}@layer theme{:root,:host{--font-sans:"Instrument Sans", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";--font-serif:ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;--font-mono:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;--color-red-50:oklch(97.1% .013 17.38);--color-red-100:oklch(93.6% .032 17.717);--color-red-200:oklch(88.5% .062 18.334);--color-red-300:oklch(80.8% .114 19.571);--color-red-400:oklch(70.4% .191 22.216);--color-red-500:oklch(63.7% .237 25.331);--color-red-600:oklch(57.7% .245 27.325);--color-red-700:oklch(50.5% .213 27.518);--color-red-800:oklch(44.4% .177 26.899);--color-red-900:oklch(39.6% .141 25.723);--color-red-950:oklch(25.8% .092 26.042);--color-orange-50:oklch(98% .016 73.684);--color-orange-100:oklch(95.4% .038 75.164);--color-orange-200:oklch(90.1% .076 70.697);--color-orange-300:oklch(83.7% .128 66.29);--color-orange-400:oklch(75% .183 55.934);--color-orange-500:oklch(70.5% .213 47.604);--color-orange-600:oklch(64.6% .222 41.116);--color-orange-700:oklch(55.3% .195 38.402);--color-orange-800:oklch(47% .157 37.304);--color-orange-900:oklch(40.8% .123 38.172);--color-orange-950:oklch(26.6% .079 36.259);--color-amber-50:oklch(98.7% .022 95.277);--color-amber-100:oklch(96.2% .059 95.617);--color-amber-200:oklch(92.4% .12 95.746);--color-amber-300:oklch(87.9% .169 91.605);--color-amber-400:oklch(82.8% .189 84.429);--color-amber-500:oklch(76.9% .188 70.08);--color-amber-600:oklch(66.6% .179 58.318);--color-amber-700:oklch(55.5% .163 48.998);--color-amber-800:oklch(47.3% .137 46.201);--color-amber-900:oklch(41.4% .112 45.904);--color-amber-950:oklch(27.9% .077 45.635);--color-yellow-50:oklch(98.7% .026 102.212);--color-yellow-100:oklch(97.3% .071 103.193);--color-yellow-200:oklch(94.5% .129 101.54);--color-yellow-300:oklch(90.5% .182 98.111);--color-yellow-400:oklch(85.2% .199 91.936);--color-yellow-500:oklch(79.5% .184 86.047);--color-yellow-600:oklch(68.1% .162 75.834);--color-yellow-700:oklch(55.4% .135 66.442);--color-yellow-800:oklch(47.6% .114 61.907);--color-yellow-900:oklch(42.1% .095 57.708);--color-yellow-950:oklch(28.6% .066 53.813);--color-lime-50:oklch(98.6% .031 120.757);--color-lime-100:oklch(96.7% .067 122.328);--color-lime-200:oklch(93.8% .127 124.321);--color-lime-300:oklch(89.7% .196 126.665);--color-lime-400:oklch(84.1% .238 128.85);--color-lime-500:oklch(76.8% .233 130.85);--color-lime-600:oklch(64.8% .2 131.684);--color-lime-700:oklch(53.2% .157 131.589);--color-lime-800:oklch(45.3% .124 130.933);--color-lime-900:oklch(40.5% .101 131.063);--color-lime-950:oklch(27.4% .072 132.109);--color-green-50:oklch(98.2% .018 155.826);--color-green-100:oklch(96.2% .044 156.743);--color-green-200:oklch(92.5% .084 155.995);--color-green-300:oklch(87.1% .15 154.449);--color-green-400:oklch(79.2% .209 151.711);--color-green-500:oklch(72.3% .219 149.579);--color-green-600:oklch(62.7% .194 149.214);--color-green-700:oklch(52.7% .154 150.069);--color-green-800:oklch(44.8% .119 151.328);--color-green-900:oklch(39.3% .095 152.535);--color-green-950:oklch(26.6% .065 152.934);--color-emerald-50:oklch(97.9% .021 166.113);--color-emerald-100:oklch(95% .052 163.051);--color-emerald-200:oklch(90.5% .093 164.15);--color-emerald-300:oklch(84.5% .143 164.978);--color-emerald-400:oklch(76.5% .177 163.223);--color-emerald-500:oklch(69.6% .17 162.48);--color-emerald-600:oklch(59.6% .145 163.225);--color-emerald-700:oklch(50.8% .118 165.612);--color-emerald-800:oklch(43.2% .095 166.913);--color-emerald-900:oklch(37.8% .077 168.94);--color-emerald-950:oklch(26.2% .051 172.552);--color-teal-50:oklch(98.4% .014 180.72);--color-teal-100:oklch(95.3% .051 180.801);--color-teal-200:oklch(91% .096 180.426);--color-teal-300:oklch(85.5% .138 181.071);--color-teal-400:oklch(77.7% .152 181.912);--color-teal-500:oklch(70.4% .14 182.503);--color-teal-600:oklch(60% .118 184.704);--color-teal-700:oklch(51.1% .096 186.391);--color-teal-800:oklch(43.7% .078 188.216);--color-teal-900:oklch(38.6% .063 188.416);--color-teal-950:oklch(27.7% .046 192.524);--color-cyan-50:oklch(98.4% .019 200.873);--color-cyan-100:oklch(95.6% .045 203.388);--color-cyan-200:oklch(91.7% .08 205.041);--color-cyan-300:oklch(86.5% .127 207.078);--color-cyan-400:oklch(78.9% .154 211.53);--color-cyan-500:oklch(71.5% .143 215.221);--color-cyan-600:oklch(60.9% .126 221.723);--color-cyan-700:oklch(52% .105 223.128);--color-cyan-800:oklch(45% .085 224.283);--color-cyan-900:oklch(39.8% .07 227.392);--color-cyan-950:oklch(30.2% .056 229.695);--color-sky-50:oklch(97.7% .013 236.62);--color-sky-100:oklch(95.1% .026 236.824);--color-sky-200:oklch(90.1% .058 230.902);--color-sky-300:oklch(82.8% .111 230.318);--color-sky-400:oklch(74.6% .16 232.661);--color-sky-500:oklch(68.5% .169 237.323);--color-sky-600:oklch(58.8% .158 241.966);--color-sky-700:oklch(50% .134 242.749);--color-sky-800:oklch(44.3% .11 240.79);--color-sky-900:oklch(39.1% .09 240.876);--color-sky-950:oklch(29.3% .066 243.157);--color-blue-50:oklch(97% .014 254.604);--color-blue-100:oklch(93.2% .032 255.585);--color-blue-200:oklch(88.2% .059 254.128);--color-blue-300:oklch(80.9% .105 251.813);--color-blue-400:oklch(70.7% .165 254.624);--color-blue-500:oklch(62.3% .214 259.815);--color-blue-600:oklch(54.6% .245 262.881);--color-blue-700:oklch(48.8% .243 264.376);--color-blue-800:oklch(42.4% .199 265.638);--color-blue-900:oklch(37.9% .146 265.522);--color-blue-950:oklch(28.2% .091 267.935);--color-indigo-50:oklch(96.2% .018 272.314);--color-indigo-100:oklch(93% .034 272.788);--color-indigo-200:oklch(87% .065 274.039);--color-indigo-300:oklch(78.5% .115 274.713);--color-indigo-400:oklch(67.3% .182 276.935);--color-indigo-500:oklch(58.5% .233 277.117);--color-indigo-600:oklch(51.1% .262 276.966);--color-indigo-700:oklch(45.7% .24 277.023);--color-indigo-800:oklch(39.8% .195 277.366);--color-indigo-900:oklch(35.9% .144 278.697);--color-indigo-950:oklch(25.7% .09 281.288);--color-violet-50:oklch(96.9% .016 293.756);--color-violet-100:oklch(94.3% .029 294.588);--color-violet-200:oklch(89.4% .057 293.283);--color-violet-300:oklch(81.1% .111 293.571);--color-violet-400:oklch(70.2% .183 293.541);--color-violet-500:oklch(60.6% .25 292.717);--color-violet-600:oklch(54.1% .281 293.009);--color-violet-700:oklch(49.1% .27 292.581);--color-violet-800:oklch(43.2% .232 292.759);--color-violet-900:oklch(38% .189 293.745);--color-violet-950:oklch(28.3% .141 291.089);--color-purple-50:oklch(97.7% .014 308.299);--color-purple-100:oklch(94.6% .033 307.174);--color-purple-200:oklch(90.2% .063 306.703);--color-purple-300:oklch(82.7% .119 306.383);--color-purple-400:oklch(71.4% .203 305.504);--color-purple-500:oklch(62.7% .265 303.9);--color-purple-600:oklch(55.8% .288 302.321);--color-purple-700:oklch(49.6% .265 301.924);--color-purple-800:oklch(43.8% .218 303.724);--color-purple-900:oklch(38.1% .176 304.987);--color-purple-950:oklch(29.1% .149 302.717);--color-fuchsia-50:oklch(97.7% .017 320.058);--color-fuchsia-100:oklch(95.2% .037 318.852);--color-fuchsia-200:oklch(90.3% .076 319.62);--color-fuchsia-300:oklch(83.3% .145 321.434);--color-fuchsia-400:oklch(74% .238 322.16);--color-fuchsia-500:oklch(66.7% .295 322.15);--color-fuchsia-600:oklch(59.1% .293 322.896);--color-fuchsia-700:oklch(51.8% .253 323.949);--color-fuchsia-800:oklch(45.2% .211 324.591);--color-fuchsia-900:oklch(40.1% .17 325.612);--color-fuchsia-950:oklch(29.3% .136 325.661);--color-pink-50:oklch(97.1% .014 343.198);--color-pink-100:oklch(94.8% .028 342.258);--color-pink-200:oklch(89.9% .061 343.231);--color-pink-300:oklch(82.3% .12 346.018);--color-pink-400:oklch(71.8% .202 349.761);--color-pink-500:oklch(65.6% .241 354.308);--color-pink-600:oklch(59.2% .249 .584);--color-pink-700:oklch(52.5% .223 3.958);--color-pink-800:oklch(45.9% .187 3.815);--color-pink-900:oklch(40.8% .153 2.432);--color-pink-950:oklch(28.4% .109 3.907);--color-rose-50:oklch(96.9% .015 12.422);--color-rose-100:oklch(94.1% .03 12.58);--color-rose-200:oklch(89.2% .058 10.001);--color-rose-300:oklch(81% .117 11.638);--color-rose-400:oklch(71.2% .194 13.428);--color-rose-500:oklch(64.5% .246 16.439);--color-rose-600:oklch(58.6% .253 17.585);--color-rose-700:oklch(51.4% .222 16.935);--color-rose-800:oklch(45.5% .188 13.697);--color-rose-900:oklch(41% .159 10.272);--color-rose-950:oklch(27.1% .105 12.094);--color-slate-50:oklch(98.4% .003 247.858);--color-slate-100:oklch(96.8% .007 247.896);--color-slate-200:oklch(92.9% .013 255.508);--color-slate-300:oklch(86.9% .022 252.894);--color-slate-400:oklch(70.4% .04 256.788);--color-slate-500:oklch(55.4% .046 257.417);--color-slate-600:oklch(44.6% .043 257.281);--color-slate-700:oklch(37.2% .044 257.287);--color-slate-800:oklch(27.9% .041 260.031);--color-slate-900:oklch(20.8% .042 265.755);--color-slate-950:oklch(12.9% .042 264.695);--color-gray-50:oklch(98.5% .002 247.839);--color-gray-100:oklch(96.7% .003 264.542);--color-gray-200:oklch(92.8% .006 264.531);--color-gray-300:oklch(87.2% .01 258.338);--color-gray-400:oklch(70.7% .022 261.325);--color-gray-500:oklch(55.1% .027 264.364);--color-gray-600:oklch(44.6% .03 256.802);--color-gray-700:oklch(37.3% .034 259.733);--color-gray-800:oklch(27.8% .033 256.848);--color-gray-900:oklch(21% .034 264.665);--color-gray-950:oklch(13% .028 261.692);--color-zinc-50:oklch(98.5% 0 0);--color-zinc-100:oklch(96.7% .001 286.375);--color-zinc-200:oklch(92% .004 286.32);--color-zinc-300:oklch(87.1% .006 286.286);--color-zinc-400:oklch(70.5% .015 286.067);--color-zinc-500:oklch(55.2% .016 285.938);--color-zinc-600:oklch(44.2% .017 285.786);--color-zinc-700:oklch(37% .013 285.805);--color-zinc-800:oklch(27.4% .006 286.033);--color-zinc-900:oklch(21% .006 285.885);--color-zinc-950:oklch(14.1% .005 285.823);--color-neutral-50:oklch(98.5% 0 0);--color-neutral-100:oklch(97% 0 0);--color-neutral-200:oklch(92.2% 0 0);--color-neutral-300:oklch(87% 0 0);--color-neutral-400:oklch(70.8% 0 0);--color-neutral-500:oklch(55.6% 0 0);--color-neutral-600:oklch(43.9% 0 0);--color-neutral-700:oklch(37.1% 0 0);--color-neutral-800:oklch(26.9% 0 0);--color-neutral-900:oklch(20.5% 0 0);--color-neutral-950:oklch(14.5% 0 0);--color-stone-50:oklch(98.5% .001 106.423);--color-stone-100:oklch(97% .001 106.424);--color-stone-200:oklch(92.3% .003 48.717);--color-stone-300:oklch(86.9% .005 56.366);--color-stone-400:oklch(70.9% .01 56.259);--color-stone-500:oklch(55.3% .013 58.071);--color-stone-600:oklch(44.4% .011 73.639);--color-stone-700:oklch(37.4% .01 67.558);--color-stone-800:oklch(26.8% .007 34.298);--color-stone-900:oklch(21.6% .006 56.043);--color-stone-950:oklch(14.7% .004 49.25);--color-black:#000;--color-white:#fff;--spacing:.25rem;--breakpoint-sm:40rem;--breakpoint-md:48rem;--breakpoint-lg:64rem;--breakpoint-xl:80rem;--breakpoint-2xl:96rem;--container-3xs:16rem;--container-2xs:18rem;--container-xs:20rem;--container-sm:24rem;--container-md:28rem;--container-lg:32rem;--container-xl:36rem;--container-2xl:42rem;--container-3xl:48rem;--container-4xl:56rem;--container-5xl:64rem;--container-6xl:72rem;--container-7xl:80rem;--text-xs:.75rem;--text-xs--line-height:calc(1 / .75);--text-sm:.875rem;--text-sm--line-height:calc(1.25 / .875);--text-base:1rem;--text-base--line-height: 1.5 ;--text-lg:1.125rem;--text-lg--line-height:calc(1.75 / 1.125);--text-xl:1.25rem;--text-xl--line-height:calc(1.75 / 1.25);--text-2xl:1.5rem;--text-2xl--line-height:calc(2 / 1.5);--text-3xl:1.875rem;--text-3xl--line-height: 1.2 ;--text-4xl:2.25rem;--text-4xl--line-height:calc(2.5 / 2.25);--text-5xl:3rem;--text-5xl--line-height:1;--text-6xl:3.75rem;--text-6xl--line-height:1;--text-7xl:4.5rem;--text-7xl--line-height:1;--text-8xl:6rem;--text-8xl--line-height:1;--text-9xl:8rem;--text-9xl--line-height:1;--font-weight-thin:100;--font-weight-extralight:200;--font-weight-light:300;--font-weight-normal:400;--font-weight-medium:500;--font-weight-semibold:600;--font-weight-bold:700;--font-weight-extrabold:800;--font-weight-black:900;--tracking-tighter:-.05em;--tracking-tight:-.025em;--tracking-normal:0em;--tracking-wide:.025em;--tracking-wider:.05em;--tracking-widest:.1em;--leading-tight:1.25;--leading-snug:1.375;--leading-normal:1.5;--leading-relaxed:1.625;--leading-loose:2;--radius-xs:.125rem;--radius-sm:.25rem;--radius-md:.375rem;--radius-lg:.5rem;--radius-xl:.75rem;--radius-2xl:1rem;--radius-3xl:1.5rem;--radius-4xl:2rem;--shadow-2xs:0 1px #0000000d;--shadow-xs:0 1px 2px 0 #0000000d;--shadow-sm:0 1px 3px 0 #0000001a, 0 1px 2px -1px #0000001a;--shadow-md:0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a;--shadow-lg:0 10px 15px -3px #0000001a, 0 4px 6px -4px #0000001a;--shadow-xl:0 20px 25px -5px #0000001a, 0 8px 10px -6px #0000001a;--shadow-2xl:0 25px 50px -12px #00000040;--inset-shadow-2xs:inset 0 1px #0000000d;--inset-shadow-xs:inset 0 1px 1px #0000000d;--inset-shadow-sm:inset 0 2px 4px #0000000d;--drop-shadow-xs:0 1px 1px #0000000d;--drop-shadow-sm:0 1px 2px #00000026;--drop-shadow-md:0 3px 3px #0000001f;--drop-shadow-lg:0 4px 4px #00000026;--drop-shadow-xl:0 9px 7px #0000001a;--drop-shadow-2xl:0 25px 25px #00000026;--ease-in:cubic-bezier(.4, 0, 1, 1);--ease-out:cubic-bezier(0, 0, .2, 1);--ease-in-out:cubic-bezier(.4, 0, .2, 1);--animate-spin:spin 1s linear infinite;--animate-ping:ping 1s cubic-bezier(0, 0, .2, 1) infinite;--animate-pulse:pulse 2s cubic-bezier(.4, 0, .6, 1) infinite;--animate-bounce:bounce 1s infinite;--blur-xs:4px;--blur-sm:8px;--blur-md:12px;--blur-lg:16px;--blur-xl:24px;--blur-2xl:40px;--blur-3xl:64px;--perspective-dramatic:100px;--perspective-near:300px;--perspective-normal:500px;--perspective-midrange:800px;--perspective-distant:1200px;--aspect-video:16 / 9;--default-transition-duration:.15s;--default-transition-timing-function:cubic-bezier(.4, 0, .2, 1);--default-font-family:var(--font-sans);--default-mono-font-family:var(--font-mono)}}@layer base{*,:after,:before,::backdrop{box-sizing:border-box;border:0 solid;margin:0;padding:0}::file-selector-button{box-sizing:border-box;border:0 solid;margin:0;padding:0}html,:host{-webkit-text-size-adjust:100%;tab-size:4;line-height:1.5;font-family:var(--default-font-family,ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");font-feature-settings:var(--default-font-feature-settings,normal);font-variation-settings:var(--default-font-variation-settings,normal);-webkit-tap-highlight-color:transparent}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;-webkit-text-decoration:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,samp,pre{font-family:var(--default-mono-font-family,ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);font-feature-settings:var(--default-mono-font-feature-settings,normal);font-variation-settings:var(--default-mono-font-variation-settings,normal);font-size:1em}small{font-size:80%}sub,sup{vertical-align:baseline;font-size:75%;line-height:0;position:relative}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}:-moz-focusring{outline:auto}progress{vertical-align:baseline}summary{display:list-item}ol,ul,menu{list-style:none}img,svg,video,canvas,audio,iframe,embed,object{vertical-align:middle;display:block}img,video{max-width:100%;height:auto}button,input,select,optgroup,textarea{font:inherit;font-feature-settings:inherit;font-variation-settings:inherit;letter-spacing:inherit;color:inherit;opacity:1;background-color:#0000;border-radius:0}::file-selector-button{font:inherit;font-feature-settings:inherit;font-variation-settings:inherit;letter-spacing:inherit;color:inherit;opacity:1;background-color:#0000;border-radius:0}:where(select:is([multiple],[size])) optgroup{font-weight:bolder}:where(select:is([multiple],[size])) optgroup option{padding-inline-start:20px}::file-selector-button{margin-inline-end:4px}::placeholder{opacity:1}@supports (not ((-webkit-appearance:-apple-pay-button))) or (contain-intrinsic-size:1px){::placeholder{color:currentColor}@supports (color:color-mix(in lab,red,red)){::placeholder{color:color-mix(in oklab,currentcolor 50%,transparent)}}}textarea{resize:vertical}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-date-and-time-value{min-height:1lh;text-align:inherit}::-webkit-datetime-edit{display:inline-flex}::-webkit-datetime-edit-fields-wrapper{padding:0}::-webkit-datetime-edit{padding-block:0}::-webkit-datetime-edit-year-field{padding-block:0}::-webkit-datetime-edit-month-field{padding-block:0}::-webkit-datetime-edit-day-field{padding-block:0}::-webkit-datetime-edit-hour-field{padding-block:0}::-webkit-datetime-edit-minute-field{padding-block:0}::-webkit-datetime-edit-second-field{padding-block:0}::-webkit-datetime-edit-millisecond-field{padding-block:0}::-webkit-datetime-edit-meridiem-field{padding-block:0}::-webkit-calendar-picker-indicator{line-height:1}:-moz-ui-invalid{box-shadow:none}button,input:where([type=button],[type=reset],[type=submit]){appearance:button}::file-selector-button{appearance:button}::-webkit-inner-spin-button{height:auto}::-webkit-outer-spin-button{height:auto}[hidden]:where(:not([hidden=until-found])){display:none!important}}@layer components;@layer utilities{.absolute{position:absolute}.fixed{position:fixed}.relative{position:relative}.static{position:static}.inset-0{inset:calc(var(--spacing) * 0)}.start{inset-inline-start:var(--spacing)}.top-0{top:calc(var(--spacing) * 0)}.right-0{right:calc(var(--spacing) * 0)}.container{width:100%}@media(min-width:40rem){.container{max-width:40rem}}@media(min-width:48rem){.container{max-width:48rem}}@media(min-width:64rem){.container{max-width:64rem}}@media(min-width:80rem){.container{max-width:80rem}}@media(min-width:96rem){.container{max-width:96rem}}.mx-auto{margin-inline:auto}.-mt-\[6\.6rem\]{margin-top:-6.6rem}.-mt-px{margin-top:-1px}.mt-2{margin-top:calc(var(--spacing) * 2)}.mt-4{margin-top:calc(var(--spacing) * 4)}.mt-6{margin-top:calc(var(--spacing) * 6)}.mt-8{margin-top:calc(var(--spacing) * 8)}.mr-2{margin-right:calc(var(--spacing) * 2)}.-mb-px{margin-bottom:-1px}.mb-1{margin-bottom:calc(var(--spacing) * 1)}.mb-2{margin-bottom:calc(var(--spacing) * 2)}.mb-4{margin-bottom:calc(var(--spacing) * 4)}.mb-6{margin-bottom:calc(var(--spacing) * 6)}.-ml-8{margin-left:calc(var(--spacing) * -8)}.-ml-px{margin-left:-1px}.ml-1{margin-left:calc(var(--spacing) * 1)}.ml-2{margin-left:calc(var(--spacing) * 2)}.ml-4{margin-left:calc(var(--spacing) * 4)}.ml-12{margin-left:calc(var(--spacing) * 12)}.contents{display:contents}.flex{display:flex}.grid{display:grid}.hidden{display:none}.inline-block{display:inline-block}.inline-flex{display:inline-flex}.table{display:table}.aspect-\[335\/364\]{aspect-ratio:335/364}.h-1{height:calc(var(--spacing) * 1)}.h-1\.5{height:calc(var(--spacing) * 1.5)}.h-2{height:calc(var(--spacing) * 2)}.h-2\.5{height:calc(var(--spacing) * 2.5)}.h-3{height:calc(var(--spacing) * 3)}.h-3\.5{height:calc(var(--spacing) * 3.5)}.h-5{height:calc(var(--spacing) * 5)}.h-8{height:calc(var(--spacing) * 8)}.h-14{height:calc(var(--spacing) * 14)}.h-14\.5{height:calc(var(--spacing) * 14.5)}.h-16{height:calc(var(--spacing) * 16)}.min-h-screen{min-height:100vh}.w-1{width:calc(var(--spacing) * 1)}.w-1\.5{width:calc(var(--spacing) * 1.5)}.w-2{width:calc(var(--spacing) * 2)}.w-2\.5{width:calc(var(--spacing) * 2.5)}.w-3{width:calc(var(--spacing) * 3)}.w-3\.5{width:calc(var(--spacing) * 3.5)}.w-5{width:calc(var(--spacing) * 5)}.w-8{width:calc(var(--spacing) * 8)}.w-\[438px\]{width:438px}.w-auto{width:auto}.w-full{width:100%}.max-w-6xl{max-width:var(--container-6xl)}.max-w-\[335px\]{max-width:335px}.max-w-none{max-width:none}.max-w-xl{max-width:var(--container-xl)}.flex-1{flex:1}.shrink-0{flex-shrink:0}.translate-y-0{--tw-translate-y:calc(var(--spacing) * 0);translate:var(--tw-translate-x) var(--tw-translate-y)}.transform{transform:var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,)}.cursor-default{cursor:default}.cursor-not-allowed{cursor:not-allowed}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.flex-col{flex-direction:column}.flex-col-reverse{flex-direction:column-reverse}.items-center{align-items:center}.justify-between{justify-content:space-between}.justify-center{justify-content:center}.justify-end{justify-content:flex-end}.justify-items-center{justify-items:center}.gap-2{gap:calc(var(--spacing) * 2)}.gap-3{gap:calc(var(--spacing) * 3)}.gap-4{gap:calc(var(--spacing) * 4)}:where(.space-x-1>:not(:last-child)){--tw-space-x-reverse:0;margin-inline-start:calc(calc(var(--spacing) * 1) * var(--tw-space-x-reverse));margin-inline-end:calc(calc(var(--spacing) * 1) * calc(1 - var(--tw-space-x-reverse)))}.overflow-hidden{overflow:hidden}.rounded-full{border-radius:3.40282e38px}.rounded-md{border-radius:var(--radius-md)}.rounded-sm{border-radius:var(--radius-sm)}.rounded-t-lg{border-top-left-radius:var(--radius-lg);border-top-right-radius:var(--radius-lg)}.rounded-l-md{border-top-left-radius:var(--radius-md);border-bottom-left-radius:var(--radius-md)}.rounded-r-md{border-top-right-radius:var(--radius-md);border-bottom-right-radius:var(--radius-md)}.rounded-br-lg{border-bottom-right-radius:var(--radius-lg)}.rounded-bl-lg{border-bottom-left-radius:var(--radius-lg)}.border{border-style:var(--tw-border-style);border-width:1px}.border-t{border-top-style:var(--tw-border-style);border-top-width:1px}.border-r{border-right-style:var(--tw-border-style);border-right-width:1px}.border-\[\#19140035\]{border-color:#19140035}.border-\[\#e3e3e0\]{border-color:#e3e3e0}.border-black{border-color:var(--color-black)}.border-gray-200{border-color:var(--color-gray-200)}.border-gray-300{border-color:var(--color-gray-300)}.border-gray-400{border-color:var(--color-gray-400)}.border-transparent{border-color:#0000}.bg-\[\#1b1b18\]{background-color:#1b1b18}.bg-\[\#FDFDFC\]{background-color:#fdfdfc}.bg-\[\#dbdbd7\]{background-color:#dbdbd7}.bg-\[\#fff2f2\]{background-color:#fff2f2}.bg-gray-100{background-color:var(--color-gray-100)}.bg-gray-200{background-color:var(--color-gray-200)}.bg-white{background-color:var(--color-white)}.p-6{padding:calc(var(--spacing) * 6)}.px-2{padding-inline:calc(var(--spacing) * 2)}.px-4{padding-inline:calc(var(--spacing) * 4)}.px-5{padding-inline:calc(var(--spacing) * 5)}.px-6{padding-inline:calc(var(--spacing) * 6)}.py-1{padding-block:calc(var(--spacing) * 1)}.py-1\.5{padding-block:calc(var(--spacing) * 1.5)}.py-2{padding-block:calc(var(--spacing) * 2)}.py-4{padding-block:calc(var(--spacing) * 4)}.pt-8{padding-top:calc(var(--spacing) * 8)}.pb-6{padding-bottom:calc(var(--spacing) * 6)}.pb-12{padding-bottom:calc(var(--spacing) * 12)}.text-center{text-align:center}.text-lg{font-size:var(--text-lg);line-height:var(--tw-leading,var(--text-lg--line-height))}.text-sm{font-size:var(--text-sm);line-height:var(--tw-leading,var(--text-sm--line-height))}.text-\[13px\]{font-size:13px}.leading-5{--tw-leading:calc(var(--spacing) * 5);line-height:calc(var(--spacing) * 5)}.leading-7{--tw-leading:calc(var(--spacing) * 7);line-height:calc(var(--spacing) * 7)}.leading-\[20px\]{--tw-leading:20px;line-height:20px}.leading-normal{--tw-leading:var(--leading-normal);line-height:var(--leading-normal)}.font-medium{--tw-font-weight:var(--font-weight-medium);font-weight:var(--font-weight-medium)}.font-semibold{--tw-font-weight:var(--font-weight-semibold);font-weight:var(--font-weight-semibold)}.tracking-wider{--tw-tracking:var(--tracking-wider);letter-spacing:var(--tracking-wider)}.text-\[\#1B1B18\],.text-\[\#1b1b18\]{color:#1b1b18}.text-\[\#706f6c\]{color:#706f6c}.text-\[\#F3BEC7\]{color:#f3bec7}.text-\[\#F8B803\]{color:#f8b803}.text-\[\#F53003\],.text-\[\#f53003\]{color:#f53003}.text-gray-200{color:var(--color-gray-200)}.text-gray-300{color:var(--color-gray-300)}.text-gray-400{color:var(--color-gray-400)}.text-gray-500{color:var(--color-gray-500)}.text-gray-600{color:var(--color-gray-600)}.text-gray-700{color:var(--color-gray-700)}.text-gray-800{color:var(--color-gray-800)}.text-gray-900{color:var(--color-gray-900)}.text-white{color:var(--color-white)}.uppercase{text-transform:uppercase}.underline{text-decoration-line:underline}.underline-offset-4{text-underline-offset:4px}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.opacity-100{opacity:1}.mix-blend-color{mix-blend-mode:color}.mix-blend-darken{mix-blend-mode:darken}.mix-blend-hard-light{mix-blend-mode:hard-light}.mix-blend-multiply{mix-blend-mode:multiply}.shadow{--tw-shadow:0 1px 3px 0 var(--tw-shadow-color,#0000001a), 0 1px 2px -1px var(--tw-shadow-color,#0000001a);box-shadow:var(--tw-inset-shadow),var(--tw-inset-ring-shadow),var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow)}.shadow-\[0px_0px_1px_0px_rgba\(0\,0\,0\,0\.03\)\,0px_1px_2px_0px_rgba\(0\,0\,0\,0\.06\)\]{--tw-shadow:0px 0px 1px 0px var(--tw-shadow-color,#00000008), 0px 1px 2px 0px var(--tw-shadow-color,#0000000f);box-shadow:var(--tw-inset-shadow),var(--tw-inset-ring-shadow),var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow)}.shadow-\[inset_0px_0px_0px_1px_rgba\(26\,26\,0\,0\.16\)\]{--tw-shadow:inset 0px 0px 0px 1px var(--tw-shadow-color,#1a1a0029);box-shadow:var(--tw-inset-shadow),var(--tw-inset-ring-shadow),var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 3px 0 var(--tw-shadow-color,#0000001a), 0 1px 2px -1px var(--tw-shadow-color,#0000001a);box-shadow:var(--tw-inset-shadow),var(--tw-inset-ring-shadow),var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow)}.ring-gray-300{--tw-ring-color:var(--color-gray-300)}.filter{filter:var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,)}.transition{transition-property:color,background-color,border-color,outline-color,text-decoration-color,fill,stroke,--tw-gradient-from,--tw-gradient-via,--tw-gradient-to,opacity,box-shadow,transform,translate,scale,rotate,filter,-webkit-backdrop-filter,backdrop-filter,display,content-visibility,overlay,pointer-events;transition-timing-function:var(--tw-ease,var(--default-transition-timing-function));transition-duration:var(--tw-duration,var(--default-transition-duration))}.transition-all{transition-property:all;transition-timing-function:var(--tw-ease,var(--default-transition-timing-function));transition-duration:var(--tw-duration,var(--default-transition-duration))}.transition-opacity{transition-property:opacity;transition-timing-function:var(--tw-ease,var(--default-transition-timing-function));transition-duration:var(--tw-duration,var(--default-transition-duration))}.delay-200{transition-delay:.2s}.delay-300{transition-delay:.3s}.delay-400{transition-delay:.4s}.duration-150{--tw-duration:.15s;transition-duration:.15s}.duration-750{--tw-duration:.75s;transition-duration:.75s}.ease-in-out{--tw-ease:var(--ease-in-out);transition-timing-function:var(--ease-in-out)}.\[--stroke-color\:\#1B1B18\]{--stroke-color:#1b1b18}.not-has-\[nav\]\:hidden:not(:has(:is(nav))){display:none}.before\:absolute:before{content:var(--tw-content);position:absolute}.before\:top-0:before{content:var(--tw-content);top:calc(var(--spacing) * 0)}.before\:top-1\/2:before{content:var(--tw-content);top:50%}.before\:bottom-0:before{content:var(--tw-content);bottom:calc(var(--spacing) * 0)}.before\:bottom-1\/2:before{content:var(--tw-content);bottom:50%}.before\:left-\[0\.4rem\]:before{content:var(--tw-content);left:.4rem}.before\:border-l:before{content:var(--tw-content);border-left-style:var(--tw-border-style);border-left-width:1px}.before\:border-\[\#e3e3e0\]:before{content:var(--tw-content);border-color:#e3e3e0}@media(hover:hover){.hover\:border-\[\#1915014a\]:hover{border-color:#1915014a}.hover\:border-\[\#19140035\]:hover{border-color:#19140035}.hover\:border-black:hover{border-color:var(--color-black)}.hover\:bg-black:hover{background-color:var(--color-black)}.hover\:bg-gray-100:hover{background-color:var(--color-gray-100)}.hover\:text-gray-400:hover{color:var(--color-gray-400)}.hover\:text-gray-700:hover{color:var(--color-gray-700)}}.focus\:border-blue-300:focus{border-color:var(--color-blue-300)}.focus\:ring:focus{--tw-ring-shadow:var(--tw-ring-inset,) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color,currentcolor);box-shadow:var(--tw-inset-shadow),var(--tw-inset-ring-shadow),var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow)}.focus\:outline-none:focus{--tw-outline-style:none;outline-style:none}.active\:bg-gray-100:active{background-color:var(--color-gray-100)}.active\:text-gray-500:active{color:var(--color-gray-500)}.active\:text-gray-700:active{color:var(--color-gray-700)}.active\:text-gray-800:active{color:var(--color-gray-800)}@media(min-width:40rem){.sm\:flex{display:flex}.sm\:hidden{display:none}.sm\:flex-1{flex:1}.sm\:items-center{align-items:center}.sm\:justify-between{justify-content:space-between}.sm\:justify-start{justify-content:flex-start}.sm\:gap-2{gap:calc(var(--spacing) * 2)}.sm\:px-6{padding-inline:calc(var(--spacing) * 6)}.sm\:pt-0{padding-top:calc(var(--spacing) * 0)}}@media(min-width:64rem){.lg\:mt-10{margin-top:calc(var(--spacing) * 10)}.lg\:mb-0{margin-bottom:calc(var(--spacing) * 0)}.lg\:mb-6{margin-bottom:calc(var(--spacing) * 6)}.lg\:-ml-px{margin-left:-1px}.lg\:ml-0{margin-left:calc(var(--spacing) * 0)}.lg\:block{display:block}.lg\:aspect-auto{aspect-ratio:auto}.lg\:w-\[438px\]{width:438px}.lg\:max-w-4xl{max-width:var(--container-4xl)}.lg\:grow{flex-grow:1}.lg\:flex-row{flex-direction:row}.lg\:justify-center{justify-content:center}.lg\:rounded-t-none{border-top-left-radius:0;border-top-right-radius:0}.lg\:rounded-tl-lg{border-top-left-radius:var(--radius-lg)}.lg\:rounded-r-lg{border-top-right-radius:var(--radius-lg);border-bottom-right-radius:var(--radius-lg)}.lg\:rounded-br-none{border-bottom-right-radius:0}.lg\:p-8{padding:calc(var(--spacing) * 8)}.lg\:p-20{padding:calc(var(--spacing) * 20)}.lg\:px-8{padding-inline:calc(var(--spacing) * 8)}.lg\:pb-10{padding-bottom:calc(var(--spacing) * 10)}}.rtl\:flex-row-reverse:where(:dir(rtl),[dir=rtl],[dir=rtl] *){flex-direction:row-reverse}@media(prefers-color-scheme:dark){.dark\:border-\[\#3E3E3A\]{border-color:#3e3e3a}.dark\:border-\[\#eeeeec\]{border-color:#eeeeec}.dark\:border-gray-600{border-color:var(--color-gray-600)}.dark\:bg-\[\#0a0a0a\]{background-color:#0a0a0a}.dark\:bg-\[\#1D0002\]{background-color:#1d0002}.dark\:bg-\[\#3E3E3A\]{background-color:#3e3e3a}.dark\:bg-\[\#161615\]{background-color:#161615}.dark\:bg-\[\#eeeeec\]{background-color:#eeeeec}.dark\:bg-gray-700{background-color:var(--color-gray-700)}.dark\:bg-gray-800{background-color:var(--color-gray-800)}.dark\:bg-gray-900{background-color:var(--color-gray-900)}.dark\:text-\[\#1C1C1A\]{color:#1c1c1a}.dark\:text-\[\#4B0600\]{color:#4b0600}.dark\:text-\[\#391800\]{color:#391800}.dark\:text-\[\#733000\]{color:#733000}.dark\:text-\[\#A1A09A\]{color:#a1a09a}.dark\:text-\[\#EDEDEC\]{color:#ededec}.dark\:text-\[\#F61500\]{color:#f61500}.dark\:text-\[\#FF4433\]{color:#f43}.dark\:text-black{color:var(--color-black)}.dark\:text-gray-200{color:var(--color-gray-200)}.dark\:text-gray-300{color:var(--color-gray-300)}.dark\:text-gray-400{color:var(--color-gray-400)}.dark\:text-gray-600{color:var(--color-gray-600)}.dark\:mix-blend-hard-light{mix-blend-mode:hard-light}.dark\:mix-blend-normal{mix-blend-mode:normal}.dark\:shadow-\[inset_0px_0px_0px_1px_\#fffaed2d\]{--tw-shadow:inset 0px 0px 0px 1px var(--tw-shadow-color,#fffaed2d);box-shadow:var(--tw-inset-shadow),var(--tw-inset-ring-shadow),var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow)}.dark\:\[--stroke-color\:\#FF750F\]{--stroke-color:#ff750f}.dark\:before\:border-\[\#3E3E3A\]:before{content:var(--tw-content);border-color:#3e3e3a}@media(hover:hover){.dark\:hover\:border-\[\#3E3E3A\]:hover{border-color:#3e3e3a}.dark\:hover\:border-\[\#62605b\]:hover{border-color:#62605b}.dark\:hover\:border-white:hover{border-color:var(--color-white)}.dark\:hover\:bg-gray-900:hover{background-color:var(--color-gray-900)}.dark\:hover\:bg-white:hover{background-color:var(--color-white)}.dark\:hover\:text-gray-200:hover{color:var(--color-gray-200)}.dark\:hover\:text-gray-300:hover{color:var(--color-gray-300)}}.dark\:focus\:border-blue-700:focus{border-color:var(--color-blue-700)}.dark\:focus\:border-blue-800:focus{border-color:var(--color-blue-800)}.dark\:active\:bg-gray-700:active{background-color:var(--color-gray-700)}.dark\:active\:text-gray-300:active{color:var(--color-gray-300)}}@starting-style{.starting\:opacity-0{opacity:0}}@media(prefers-reduced-motion:no-preference){@starting-style{.motion-safe\:starting\:-translate-x-\[26px\]{--tw-translate-x: -26px ;translate:var(--tw-translate-x) var(--tw-translate-y)}}@starting-style{.motion-safe\:starting\:-translate-x-\[51px\]{--tw-translate-x: -51px ;translate:var(--tw-translate-x) var(--tw-translate-y)}}@starting-style{.motion-safe\:starting\:-translate-x-\[78px\]{--tw-translate-x: -78px ;translate:var(--tw-translate-x) var(--tw-translate-y)}}@starting-style{.motion-safe\:starting\:-translate-x-\[102px\]{--tw-translate-x: -102px ;translate:var(--tw-translate-x) var(--tw-translate-y)}}@starting-style{.motion-safe\:starting\:translate-y-6{--tw-translate-y:calc(var(--spacing) * 6);translate:var(--tw-translate-x) var(--tw-translate-y)}}}}@property --tw-translate-x{syntax:"*";inherits:false;initial-value:0}@property --tw-translate-y{syntax:"*";inherits:false;initial-value:0}@property --tw-translate-z{syntax:"*";inherits:false;initial-value:0}@property --tw-rotate-x{syntax:"*";inherits:false}@property --tw-rotate-y{syntax:"*";inherits:false}@property --tw-rotate-z{syntax:"*";inherits:false}@property --tw-skew-x{syntax:"*";inherits:false}@property --tw-skew-y{syntax:"*";inherits:false}@property --tw-space-x-reverse{syntax:"*";inherits:false;initial-value:0}@property --tw-border-style{syntax:"*";inherits:false;initial-value:solid}@property --tw-leading{syntax:"*";inherits:false}@property --tw-font-weight{syntax:"*";inherits:false}@property --tw-tracking{syntax:"*";inherits:false}@property --tw-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-shadow-color{syntax:"*";inherits:false}@property --tw-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-inset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-inset-shadow-color{syntax:"*";inherits:false}@property --tw-inset-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-ring-color{syntax:"*";inherits:false}@property --tw-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-inset-ring-color{syntax:"*";inherits:false}@property --tw-inset-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-ring-inset{syntax:"*";inherits:false}@property --tw-ring-offset-width{syntax:"<length>";inherits:false;initial-value:0}@property --tw-ring-offset-color{syntax:"*";inherits:false;initial-value:#fff}@property --tw-ring-offset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-blur{syntax:"*";inherits:false}@property --tw-brightness{syntax:"*";inherits:false}@property --tw-contrast{syntax:"*";inherits:false}@property --tw-grayscale{syntax:"*";inherits:false}@property --tw-hue-rotate{syntax:"*";inherits:false}@property --tw-invert{syntax:"*";inherits:false}@property --tw-opacity{syntax:"*";inherits:false}@property --tw-saturate{syntax:"*";inherits:false}@property --tw-sepia{syntax:"*";inherits:false}@property --tw-drop-shadow{syntax:"*";inherits:false}@property --tw-drop-shadow-color{syntax:"*";inherits:false}@property --tw-drop-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-drop-shadow-size{syntax:"*";inherits:false}@property --tw-duration{syntax:"*";inherits:false}@property --tw-ease{syntax:"*";inherits:false}@property --tw-content{syntax:"*";inherits:false;initial-value:""}@keyframes spin{to{transform:rotate(360deg)}}@keyframes ping{75%,to{opacity:0;transform:scale(2)}}@keyframes pulse{50%{opacity:.5}}@keyframes bounce{0%,to{animation-timing-function:cubic-bezier(.8,0,1,1);transform:translateY(-25%)}50%{animation-timing-function:cubic-bezier(0,0,.2,1);transform:none}}
-            </style>
-        @endif
-    </head>
-    <body class="bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] flex p-6 lg:p-8 items-center lg:justify-center min-h-screen flex-col">
-        <header class="w-full lg:max-w-4xl max-w-[335px] text-sm mb-6 not-has-[nav]:hidden">
-            @if (Route::has('login'))
-                <nav class="flex items-center justify-end gap-4">
-                    @auth
-                        <a
-                            href="{{ url('/dashboard') }}"
-                            class="inline-block px-5 py-1.5 dark:text-[#EDEDEC] border-[#19140035] hover:border-[#1915014a] border text-[#1b1b18] dark:border-[#3E3E3A] dark:hover:border-[#62605b] rounded-sm text-sm leading-normal"
-                        >
-                            Dashboard
-                        </a>
-                    @else
-                        <a
-                            href="{{ route('login') }}"
-                            class="inline-block px-5 py-1.5 dark:text-[#EDEDEC] text-[#1b1b18] border border-transparent hover:border-[#19140035] dark:hover:border-[#3E3E3A] rounded-sm text-sm leading-normal"
-                        >
-                            Log in
-                        </a>
-
-                        @if (Route::has('register'))
-                            <a
-                                href="{{ route('register') }}"
-                                class="inline-block px-5 py-1.5 dark:text-[#EDEDEC] border-[#19140035] hover:border-[#1915014a] border text-[#1b1b18] dark:border-[#3E3E3A] dark:hover:border-[#62605b] rounded-sm text-sm leading-normal">
-                                Register
-                            </a>
-                        @endif
-                    @endauth
-                </nav>
-            @endif
-        </header>
-        <div class="flex items-center justify-center w-full transition-opacity opacity-100 duration-750 lg:grow starting:opacity-0">
-            <main class="flex max-w-[335px] w-full flex-col-reverse lg:max-w-4xl lg:flex-row">
-                <div class="text-[13px] leading-[20px] flex-1 p-6 pb-6 lg:p-20 lg:pb-10 bg-white dark:bg-[#161615] dark:text-[#EDEDEC] shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d] rounded-bl-lg rounded-br-lg lg:rounded-tl-lg lg:rounded-br-none">
-                    <h1 class="mb-1 font-medium">Let's get started</h1>
-                    <p class="mb-2 text-[#706f6c] dark:text-[#A1A09A]">With so many options available to you,<br /> we suggest you start with the following:</p>
-                    <ul class="flex flex-col mb-4 lg:mb-6">
-                        <li class="flex items-center gap-4 py-2 relative before:border-l before:border-[#e3e3e0] dark:before:border-[#3E3E3A] before:top-1/2 before:bottom-0 before:left-[0.4rem] before:absolute">
-                            <span class="relative py-1 bg-white dark:bg-[#161615]">
-                                <span class="flex items-center justify-center rounded-full bg-[#FDFDFC] dark:bg-[#161615] shadow-[0px_0px_1px_0px_rgba(0,0,0,0.03),0px_1px_2px_0px_rgba(0,0,0,0.06)] w-3.5 h-3.5 border dark:border-[#3E3E3A] border-[#e3e3e0]">
-                                    <span class="rounded-full bg-[#dbdbd7] dark:bg-[#3E3E3A] w-1.5 h-1.5"></span>
-                                </span>
-                            </span>
-                            <span>
-                                Read the
-                                <a href="https://laravel.com/docs" target="_blank" class="inline-flex items-center space-x-1 font-medium underline underline-offset-4 text-[#f53003] dark:text-[#FF4433] ml-1">
-                                    <span>Documentation</span>
-                                    <svg
-                                        width="10"
-                                        height="11"
-                                        viewBox="0 0 10 11"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="w-2.5 h-2.5"
-                                    >
-                                        <path
-                                            d="M7.70833 6.95834V2.79167H3.54167M2.5 8L7.5 3.00001"
-                                            stroke="currentColor"
-                                            stroke-linecap="square"
-                                        />
-                                    </svg>
-                                </a>
-                            </span>
-                        </li>
-                        <li class="flex items-center gap-4 py-2 relative before:border-l before:border-[#e3e3e0] dark:before:border-[#3E3E3A] before:bottom-1/2 before:top-0 before:left-[0.4rem] before:absolute">
-                            <span class="relative py-1 bg-white dark:bg-[#161615]">
-                                <span class="flex items-center justify-center rounded-full bg-[#FDFDFC] dark:bg-[#161615] shadow-[0px_0px_1px_0px_rgba(0,0,0,0.03),0px_1px_2px_0px_rgba(0,0,0,0.06)] w-3.5 h-3.5 border dark:border-[#3E3E3A] border-[#e3e3e0]">
-                                    <span class="rounded-full bg-[#dbdbd7] dark:bg-[#3E3E3A] w-1.5 h-1.5"></span>
-                                </span>
-                            </span>
-                            <span>
-                                Watch video tutorials at
-                                <a href="https://laracasts.com" target="_blank" class="inline-flex items-center space-x-1 font-medium underline underline-offset-4 text-[#f53003] dark:text-[#FF4433] ml-1">
-                                    <span>Laracasts</span>
-                                    <svg
-                                        width="10"
-                                        height="11"
-                                        viewBox="0 0 10 11"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="w-2.5 h-2.5"
-                                    >
-                                        <path
-                                            d="M7.70833 6.95834V2.79167H3.54167M2.5 8L7.5 3.00001"
-                                            stroke="currentColor"
-                                            stroke-linecap="square"
-                                        />
-                                    </svg>
-                                </a>
-                            </span>
-                        </li>
-                    </ul>
-                    <ul class="flex gap-3 text-sm leading-normal">
-                        <li>
-                            <a href="https://cloud.laravel.com" target="_blank" class="inline-block dark:bg-[#eeeeec] dark:border-[#eeeeec] dark:text-[#1C1C1A] dark:hover:bg-white dark:hover:border-white hover:bg-black hover:border-black px-5 py-1.5 bg-[#1b1b18] rounded-sm border border-black text-white text-sm leading-normal">
-                                Deploy now
-                            </a>
-                        </li>
-                    </ul>
-
-                    <p class="mt-6 lg:mt-10 text-[#706f6c] dark:text-[#A1A09A]">
-                        v{{ app()->version() }}
-                        <a href="https://github.com/laravel/framework/blob/13.x/CHANGELOG.md" target="_blank" class="inline-flex items-center space-x-1 font-medium underline underline-offset-4 text-[#f53003] dark:text-[#FF4433] ml-1">
-                            <span>View changelog</span>
-                            <svg
-                                width="10"
-                                height="11"
-                                viewBox="0 0 10 11"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="w-2.5 h-2.5"
-                            >
-                                <path
-                                    d="M7.70833 6.95834V2.79167H3.54167M2.5 8L7.5 3.00001"
-                                    stroke="currentColor"
-                                    stroke-linecap="square"
-                                />
-                            </svg>
-                        </a>
-                    </p>
+                    <!-- روابط التنقل الأساسية -->
+                    <nav class="hidden md:flex items-center gap-1 text-xs font-semibold">
+                        <button onclick="switchTab('catalog')" id="nav-catalog" class="nav-btn active px-3.5 py-2 rounded-lg transition flex items-center gap-1.5">
+                            المنتجات
+                        </button>
+                        <button onclick="switchTab('orders')" id="nav-orders" class="nav-btn px-3.5 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5">
+                            طلباتي
+                        </button>
+                    </nav>
                 </div>
-                <div class="bg-[#fff2f2] dark:bg-[#1D0002] relative lg:-ml-px -mb-px lg:mb-0 rounded-t-lg lg:rounded-t-none lg:rounded-r-lg aspect-[335/364] lg:aspect-auto w-full lg:w-[438px] shrink-0 overflow-hidden">
-                    {{-- Laravel Logo --}}
-                    <svg class="w-full text-[#F53003] dark:text-[#F61500] transition-all translate-y-0 opacity-100 max-w-none duration-750 starting:opacity-0 motion-safe:starting:translate-y-6" viewBox="0 0 438 104" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.2036 -3H0V102.197H49.5189V86.7187H17.2036V-3Z" fill="currentColor" />
-                        <path d="M110.256 41.6337C108.061 38.1275 104.945 35.3731 100.905 33.3681C96.8667 31.3647 92.8016 30.3618 88.7131 30.3618C83.4247 30.3618 78.5885 31.3389 74.201 33.2923C69.8111 35.2456 66.0474 37.928 62.9059 41.3333C59.7643 44.7401 57.3198 48.6726 55.5754 53.1293C53.8287 57.589 52.9572 62.274 52.9572 67.1813C52.9572 72.1925 53.8287 76.8995 55.5754 81.3069C57.3191 85.7173 59.7636 89.6241 62.9059 93.0293C66.0474 96.4361 69.8119 99.1155 74.201 101.069C78.5885 103.022 83.4247 103.999 88.7131 103.999C92.8016 103.999 96.8667 102.997 100.905 100.994C104.945 98.9911 108.061 96.2359 110.256 92.7282V102.195H126.563V32.1642H110.256V41.6337ZM108.76 75.7472C107.762 78.4531 106.366 80.8078 104.572 82.8112C102.776 84.8161 100.606 86.4183 98.0637 87.6206C95.5202 88.823 92.7004 89.4238 89.6103 89.4238C86.5178 89.4238 83.7252 88.823 81.2324 87.6206C78.7388 86.4183 76.5949 84.8161 74.7998 82.8112C73.004 80.8078 71.6319 78.4531 70.6856 75.7472C69.7356 73.0421 69.2644 70.1868 69.2644 67.1821C69.2644 64.1758 69.7356 61.3205 70.6856 58.6154C71.6319 55.9102 73.004 53.5571 74.7998 51.5522C76.5949 49.5495 78.738 47.9451 81.2324 46.7427C83.7252 45.5404 86.5178 44.9396 89.6103 44.9396C92.7012 44.9396 95.5202 45.5404 98.0637 46.7427C100.606 47.9451 102.776 49.5487 104.572 51.5522C106.367 53.5571 107.762 55.9102 108.76 58.6154C109.756 61.3205 110.256 64.1758 110.256 67.1821C110.256 70.1868 109.756 73.0421 108.76 75.7472Z" fill="currentColor" />
-                        <path d="M242.805 41.6337C240.611 38.1275 237.494 35.3731 233.455 33.3681C229.416 31.3647 225.351 30.3618 221.262 30.3618C215.974 30.3618 211.138 31.3389 206.75 33.2923C202.36 35.2456 198.597 37.928 195.455 41.3333C192.314 44.7401 189.869 48.6726 188.125 53.1293C186.378 57.589 185.507 62.274 185.507 67.1813C185.507 72.1925 186.378 76.8995 188.125 81.3069C189.868 85.7173 192.313 89.6241 195.455 93.0293C198.597 96.4361 202.361 99.1155 206.75 101.069C211.138 103.022 215.974 103.999 221.262 103.999C225.351 103.999 229.416 102.997 233.455 100.994C237.494 98.9911 240.611 96.2359 242.805 92.7282V102.195H259.112V32.1642H242.805V41.6337ZM241.31 75.7472C240.312 78.4531 238.916 80.8078 237.122 82.8112C235.326 84.8161 233.156 86.4183 230.614 87.6206C228.07 88.823 225.251 89.4238 222.16 89.4238C219.068 89.4238 216.275 88.823 213.782 87.6206C211.289 86.4183 209.145 84.8161 207.35 82.8112C205.554 80.8078 204.182 78.4531 203.236 75.7472C202.286 73.0421 201.814 70.1868 201.814 67.1821C201.814 64.1758 202.286 61.3205 203.236 58.6154C204.182 55.9102 205.554 53.5571 207.35 51.5522C209.145 49.5495 211.288 47.9451 213.782 46.7427C216.275 45.5404 219.068 44.9396 222.16 44.9396C225.251 44.9396 228.07 45.5404 230.614 46.7427C233.156 47.9451 235.326 49.5487 237.122 51.5522C238.917 53.5571 240.312 55.9102 241.31 58.6154C242.306 61.3205 242.806 64.1758 242.806 67.1821C242.805 70.1868 242.305 73.0421 241.31 75.7472Z" fill="currentColor" />
-                        <path d="M438 -3H421.694V102.197H438V-3Z" fill="currentColor" />
-                        <path d="M139.43 102.197H155.735V48.2834H183.712V32.1665H139.43V102.197Z" fill="currentColor" />
-                        <path d="M324.49 32.1665L303.995 85.794L283.498 32.1665H266.983L293.748 102.197H314.242L341.006 32.1665H324.49Z" fill="currentColor" />
-                        <path d="M376.571 30.3656C356.603 30.3656 340.797 46.8497 340.797 67.1828C340.797 89.6597 356.094 104 378.661 104C391.29 104 399.354 99.1488 409.206 88.5848L398.189 80.0226C398.183 80.031 389.874 90.9895 377.468 90.9895C363.048 90.9895 356.977 79.3111 356.977 73.269H411.075C413.917 50.1328 398.775 30.3656 376.571 30.3656ZM357.02 61.0967C357.145 59.7487 359.023 43.3761 376.442 43.3761C393.861 43.3761 395.978 59.7464 396.099 61.0967H357.02Z" fill="currentColor" />
-                    </svg>
 
-                    {{-- 13 --}}
-                    <svg class="w-[438px] max-w-none relative -mt-[6.6rem] -ml-8 lg:ml-0 [--stroke-color:#1B1B18] dark:[--stroke-color:#FF750F]" viewBox="0 0 440 392" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <g class="mix-blend-darken dark:mix-blend-normal transition-all delay-300 opacity-100 duration-750 starting:opacity-0 text-[#1B1B18] dark:text-black">
-                            <mask id="path-1-mask" maskUnits="userSpaceOnUse" x="-0.328613" y="103" width="338" height="299" fill="black">
-                                <rect fill="white" x="-0.328613" y="103" width="338" height="299"/>
-                                <path d="M234.936 400.8C204.136 400.8 178.936 392.4 159.336 375.6C140.136 358.8 130.536 337 130.536 310.2H200.736C200.736 318.2 203.736 324.8 209.736 330C215.736 335.2 223.736 337.8 233.736 337.8C243.336 337.8 251.136 335 257.136 329.4C263.536 323.8 266.736 316.6 266.736 307.8C266.736 299.8 263.936 293.2 258.336 288C252.736 282.8 245.536 280.2 236.736 280.2H199.536V218.4H236.736C243.536 218.4 249.336 216 254.136 211.2C258.936 206.4 261.336 200.4 261.336 193.2C261.336 184.8 258.736 178.2 253.536 173.4C248.336 168.6 241.736 166.2 233.736 166.2C226.536 166.2 220.336 168.4 215.136 172.8C210.336 177.2 207.936 182.8 207.936 189.6H141.336C141.336 164.8 150.136 144.6 167.736 129C185.336 113 207.936 105 235.536 105C263.136 105 285.536 112.2 302.736 126.6C320.336 141 329.136 160 329.136 183.6C329.136 200.8 324.536 214.8 315.336 225.6C306.136 236 294.336 243.2 279.936 247.2C297.136 252 310.736 260.2 320.736 271.8C331.136 283.4 336.336 298 336.336 315.6C336.336 340.4 326.936 360.8 308.136 376.8C289.336 392.8 264.936 400.8 234.936 400.8Z"/>
-                                <path d="M26.8714 167.6H1.67139V105.2H94.6714V400.2H26.8714V167.6Z"/>
-                            </mask>
-                            <path d="M234.936 400.8C204.136 400.8 178.936 392.4 159.336 375.6C140.136 358.8 130.536 337 130.536 310.2H200.736C200.736 318.2 203.736 324.8 209.736 330C215.736 335.2 223.736 337.8 233.736 337.8C243.336 337.8 251.136 335 257.136 329.4C263.536 323.8 266.736 316.6 266.736 307.8C266.736 299.8 263.936 293.2 258.336 288C252.736 282.8 245.536 280.2 236.736 280.2H199.536V218.4H236.736C243.536 218.4 249.336 216 254.136 211.2C258.936 206.4 261.336 200.4 261.336 193.2C261.336 184.8 258.736 178.2 253.536 173.4C248.336 168.6 241.736 166.2 233.736 166.2C226.536 166.2 220.336 168.4 215.136 172.8C210.336 177.2 207.936 182.8 207.936 189.6H141.336C141.336 164.8 150.136 144.6 167.736 129C185.336 113 207.936 105 235.536 105C263.136 105 285.536 112.2 302.736 126.6C320.336 141 329.136 160 329.136 183.6C329.136 200.8 324.536 214.8 315.336 225.6C306.136 236 294.336 243.2 279.936 247.2C297.136 252 310.736 260.2 320.736 271.8C331.136 283.4 336.336 298 336.336 315.6C336.336 340.4 326.936 360.8 308.136 376.8C289.336 392.8 264.936 400.8 234.936 400.8Z" fill="currentColor"/>
-                            <path d="M26.8714 167.6H1.67139V105.2H94.6714V400.2H26.8714V167.6Z" fill="currentColor"/>
-                            <path d="M234.936 400.8C204.136 400.8 178.936 392.4 159.336 375.6C140.136 358.8 130.536 337 130.536 310.2H200.736C200.736 318.2 203.736 324.8 209.736 330C215.736 335.2 223.736 337.8 233.736 337.8C243.336 337.8 251.136 335 257.136 329.4C263.536 323.8 266.736 316.6 266.736 307.8C266.736 299.8 263.936 293.2 258.336 288C252.736 282.8 245.536 280.2 236.736 280.2H199.536V218.4H236.736C243.536 218.4 249.336 216 254.136 211.2C258.936 206.4 261.336 200.4 261.336 193.2C261.336 184.8 258.736 178.2 253.536 173.4C248.336 168.6 241.736 166.2 233.736 166.2C226.536 166.2 220.336 168.4 215.136 172.8C210.336 177.2 207.936 182.8 207.936 189.6H141.336C141.336 164.8 150.136 144.6 167.736 129C185.336 113 207.936 105 235.536 105C263.136 105 285.536 112.2 302.736 126.6C320.336 141 329.136 160 329.136 183.6C329.136 200.8 324.536 214.8 315.336 225.6C306.136 236 294.336 243.2 279.936 247.2C297.136 252 310.736 260.2 320.736 271.8C331.136 283.4 336.336 298 336.336 315.6C336.336 340.4 326.936 360.8 308.136 376.8C289.336 392.8 264.936 400.8 234.936 400.8Z" stroke="var(--stroke-color)" stroke-width="2.4" mask="url(#path-1-mask)"/>
-                            <path d="M26.8714 167.6H1.67139V105.2H94.6714V400.2H26.8714V167.6Z" stroke="var(--stroke-color)" stroke-width="2.4" mask="url(#path-1-mask)"/>
-                        </g>
-
-                        <g class="transition-all delay-400 opacity-100 duration-750 starting:opacity-0 motion-safe:starting:-translate-x-[26px] text-[#F3BEC7] dark:text-[#4B0600]">
-                            <mask id="path-2-mask" maskUnits="userSpaceOnUse" x="25.3357" y="103" width="338" height="299" fill="black">
-                                <rect fill="white" x="25.3357" y="103" width="338" height="299"/>
-                                <path d="M260.6 400.8C229.8 400.8 204.6 392.4 185 375.6C165.8 358.8 156.2 337 156.2 310.2H226.4C226.4 318.2 229.4 324.8 235.4 330C241.4 335.2 249.4 337.8 259.4 337.8C269 337.8 276.8 335 282.8 329.4C289.2 323.8 292.4 316.6 292.4 307.8C292.4 299.8 289.6 293.2 284 288C278.4 282.8 271.2 280.2 262.4 280.2H225.2V218.4H262.4C269.2 218.4 275 216 279.8 211.2C284.6 206.4 287 200.4 287 193.2C287 184.8 284.4 178.2 279.2 173.4C274 168.6 267.4 166.2 259.4 166.2C252.2 166.2 246 168.4 240.8 172.8C236 177.2 233.6 182.8 233.6 189.6H167C167 164.8 175.8 144.6 193.4 129C211 113 233.6 105 261.2 105C288.8 105 311.2 112.2 328.4 126.6C346 141 354.8 160 354.8 183.6C354.8 200.8 350.2 214.8 341 225.6C331.8 236 320 243.2 305.6 247.2C322.8 252 336.4 260.2 346.4 271.8C356.8 283.4 362 298 362 315.6C362 340.4 352.6 360.8 333.8 376.8C315 392.8 290.6 400.8 260.6 400.8Z"/>
-                                <path d="M52.5357 167.6H27.3357V105.2H120.336V400.2H52.5357V167.6Z"/>
-                            </mask>
-                            <path d="M260.6 400.8C229.8 400.8 204.6 392.4 185 375.6C165.8 358.8 156.2 337 156.2 310.2H226.4C226.4 318.2 229.4 324.8 235.4 330C241.4 335.2 249.4 337.8 259.4 337.8C269 337.8 276.8 335 282.8 329.4C289.2 323.8 292.4 316.6 292.4 307.8C292.4 299.8 289.6 293.2 284 288C278.4 282.8 271.2 280.2 262.4 280.2H225.2V218.4H262.4C269.2 218.4 275 216 279.8 211.2C284.6 206.4 287 200.4 287 193.2C287 184.8 284.4 178.2 279.2 173.4C274 168.6 267.4 166.2 259.4 166.2C252.2 166.2 246 168.4 240.8 172.8C236 177.2 233.6 182.8 233.6 189.6H167C167 164.8 175.8 144.6 193.4 129C211 113 233.6 105 261.2 105C288.8 105 311.2 112.2 328.4 126.6C346 141 354.8 160 354.8 183.6C354.8 200.8 350.2 214.8 341 225.6C331.8 236 320 243.2 305.6 247.2C322.8 252 336.4 260.2 346.4 271.8C356.8 283.4 362 298 362 315.6C362 340.4 352.6 360.8 333.8 376.8C315 392.8 290.6 400.8 260.6 400.8Z" fill="currentColor"/>
-                            <path d="M52.5357 167.6H27.3357V105.2H120.336V400.2H52.5357V167.6Z" fill="currentColor"/>
-                            <path d="M260.6 400.8C229.8 400.8 204.6 392.4 185 375.6C165.8 358.8 156.2 337 156.2 310.2H226.4C226.4 318.2 229.4 324.8 235.4 330C241.4 335.2 249.4 337.8 259.4 337.8C269 337.8 276.8 335 282.8 329.4C289.2 323.8 292.4 316.6 292.4 307.8C292.4 299.8 289.6 293.2 284 288C278.4 282.8 271.2 280.2 262.4 280.2H225.2V218.4H262.4C269.2 218.4 275 216 279.8 211.2C284.6 206.4 287 200.4 287 193.2C287 184.8 284.4 178.2 279.2 173.4C274 168.6 267.4 166.2 259.4 166.2C252.2 166.2 246 168.4 240.8 172.8C236 177.2 233.6 182.8 233.6 189.6H167C167 164.8 175.8 144.6 193.4 129C211 113 233.6 105 261.2 105C288.8 105 311.2 112.2 328.4 126.6C346 141 354.8 160 354.8 183.6C354.8 200.8 350.2 214.8 341 225.6C331.8 236 320 243.2 305.6 247.2C322.8 252 336.4 260.2 346.4 271.8C356.8 283.4 362 298 362 315.6C362 340.4 352.6 360.8 333.8 376.8C315 392.8 290.6 400.8 260.6 400.8Z" stroke="var(--stroke-color)" stroke-width="2.4" mask="url(#path-2-mask)"/>
-                            <path d="M52.5357 167.6H27.3357V105.2H120.336V400.2H52.5357V167.6Z" stroke="var(--stroke-color)" stroke-width="2.4" mask="url(#path-2-mask)"/>
-                        </g>
-                        
-                        <g class="mix-blend-color dark:mix-blend-hard-light transition-all delay-400 opacity-100 duration-750 starting:opacity-0 motion-safe:starting:-translate-x-[51px] text-[#F8B803] dark:text-[#391800]">
-                            <mask id="path-3-mask" maskUnits="userSpaceOnUse" x="51" y="103" width="338" height="299" fill="black">
-                                <rect fill="white" x="51" y="103" width="338" height="299"/>
-                                <path d="M286.264 400.8C255.464 400.8 230.264 392.4 210.664 375.6C191.464 358.8 181.864 337 181.864 310.2H252.064C252.064 318.2 255.064 324.8 261.064 330C267.064 335.2 275.064 337.8 285.064 337.8C294.664 337.8 302.464 335 308.464 329.4C314.864 323.8 318.064 316.6 318.064 307.8C318.064 299.8 315.264 293.2 309.664 288C304.064 282.8 296.864 280.2 288.064 280.2H250.864V218.4H288.064C294.864 218.4 300.664 216 305.464 211.2C310.264 206.4 312.664 200.4 312.664 193.2C312.664 184.8 310.064 178.2 304.864 173.4C299.664 168.6 293.064 166.2 285.064 166.2C277.864 166.2 271.664 168.4 266.464 172.8C261.664 177.2 259.264 182.8 259.264 189.6H192.664C192.664 164.8 201.464 144.6 219.064 129C236.664 113 259.264 105 286.864 105C314.464 105 336.864 112.2 354.064 126.6C371.664 141 380.464 160 380.464 183.6C380.464 200.8 375.864 214.8 366.664 225.6C357.464 236 345.664 243.2 331.264 247.2C348.464 252 362.064 260.2 372.064 271.8C382.464 283.4 387.664 298 387.664 315.6C387.664 340.4 378.264 360.8 359.464 376.8C340.664 392.8 316.264 400.8 286.264 400.8Z"/>
-                                <path d="M78.2 167.6H53V105.2H146V400.2H78.2V167.6Z"/>
-                            </mask>
-                            <path d="M286.264 400.8C255.464 400.8 230.264 392.4 210.664 375.6C191.464 358.8 181.864 337 181.864 310.2H252.064C252.064 318.2 255.064 324.8 261.064 330C267.064 335.2 275.064 337.8 285.064 337.8C294.664 337.8 302.464 335 308.464 329.4C314.864 323.8 318.064 316.6 318.064 307.8C318.064 299.8 315.264 293.2 309.664 288C304.064 282.8 296.864 280.2 288.064 280.2H250.864V218.4H288.064C294.864 218.4 300.664 216 305.464 211.2C310.264 206.4 312.664 200.4 312.664 193.2C312.664 184.8 310.064 178.2 304.864 173.4C299.664 168.6 293.064 166.2 285.064 166.2C277.864 166.2 271.664 168.4 266.464 172.8C261.664 177.2 259.264 182.8 259.264 189.6H192.664C192.664 164.8 201.464 144.6 219.064 129C236.664 113 259.264 105 286.864 105C314.464 105 336.864 112.2 354.064 126.6C371.664 141 380.464 160 380.464 183.6C380.464 200.8 375.864 214.8 366.664 225.6C357.464 236 345.664 243.2 331.264 247.2C348.464 252 362.064 260.2 372.064 271.8C382.464 283.4 387.664 298 387.664 315.6C387.664 340.4 378.264 360.8 359.464 376.8C340.664 392.8 316.264 400.8 286.264 400.8Z" fill="currentColor"/>
-                            <path d="M78.2 167.6H53V105.2H146V400.2H78.2V167.6Z" fill="currentColor"/>
-                            <path d="M286.264 400.8C255.464 400.8 230.264 392.4 210.664 375.6C191.464 358.8 181.864 337 181.864 310.2H252.064C252.064 318.2 255.064 324.8 261.064 330C267.064 335.2 275.064 337.8 285.064 337.8C294.664 337.8 302.464 335 308.464 329.4C314.864 323.8 318.064 316.6 318.064 307.8C318.064 299.8 315.264 293.2 309.664 288C304.064 282.8 296.864 280.2 288.064 280.2H250.864V218.4H288.064C294.864 218.4 300.664 216 305.464 211.2C310.264 206.4 312.664 200.4 312.664 193.2C312.664 184.8 310.064 178.2 304.864 173.4C299.664 168.6 293.064 166.2 285.064 166.2C277.864 166.2 271.664 168.4 266.464 172.8C261.664 177.2 259.264 182.8 259.264 189.6H192.664C192.664 164.8 201.464 144.6 219.064 129C236.664 113 259.264 105 286.864 105C314.464 105 336.864 112.2 354.064 126.6C371.664 141 380.464 160 380.464 183.6C380.464 200.8 375.864 214.8 366.664 225.6C357.464 236 345.664 243.2 331.264 247.2C348.464 252 362.064 260.2 372.064 271.8C382.464 283.4 387.664 298 387.664 315.6C387.664 340.4 378.264 360.8 359.464 376.8C340.664 392.8 316.264 400.8 286.264 400.8Z" stroke="var(--stroke-color)" stroke-width="2.4" mask="url(#path-3-mask)"/>
-                            <path d="M78.2 167.6H53V105.2H146V400.2H78.2V167.6Z" stroke="var(--stroke-color)" stroke-width="2.4" mask="url(#path-3-mask)"/>
-                        </g>
-                        
-                        <g class="mix-blend-multiply dark:mix-blend-normal transition-all delay-400 opacity-100 duration-750 starting:opacity-0 motion-safe:starting:-translate-x-[78px] text-[#F3BEC7] dark:text-[#733000]">
-                            <mask id="path-4-mask" maskUnits="userSpaceOnUse" x="76.6643" y="103" width="338" height="299" fill="black">
-                                <rect fill="white" x="76.6643" y="103" width="338" height="299"/>
-                                <path d="M311.929 400.8C281.129 400.8 255.929 392.4 236.329 375.6C217.129 358.8 207.529 337 207.529 310.2H277.729C277.729 318.2 280.729 324.8 286.729 330C292.729 335.2 300.729 337.8 310.729 337.8C320.329 337.8 328.129 335 334.129 329.4C340.529 323.8 343.729 316.6 343.729 307.8C343.729 299.8 340.929 293.2 335.329 288C329.729 282.8 322.529 280.2 313.729 280.2H276.529V218.4H313.729C320.529 218.4 326.329 216 331.129 211.2C335.929 206.4 338.329 200.4 338.329 193.2C338.329 184.8 335.729 178.2 330.529 173.4C325.329 168.6 318.729 166.2 310.729 166.2C303.529 166.2 297.329 168.4 292.129 172.8C287.329 177.2 284.929 182.8 284.929 189.6H218.329C218.329 164.8 227.129 144.6 244.729 129C262.329 113 284.929 105 312.529 105C340.129 105 362.529 112.2 379.729 126.6C397.329 141 406.129 160 406.129 183.6C406.129 200.8 401.529 214.8 392.329 225.6C383.129 236 371.329 243.2 356.929 247.2C374.129 252 387.729 260.2 397.729 271.8C408.129 283.4 413.329 298 413.329 315.6C413.329 340.4 403.929 360.8 385.129 376.8C366.329 392.8 341.929 400.8 311.929 400.8Z"/>
-                                <path d="M103.864 167.6H78.6643V105.2H171.664V400.2H103.864V167.6Z"/>
-                            </mask>
-                            <path d="M311.929 400.8C281.129 400.8 255.929 392.4 236.329 375.6C217.129 358.8 207.529 337 207.529 310.2H277.729C277.729 318.2 280.729 324.8 286.729 330C292.729 335.2 300.729 337.8 310.729 337.8C320.329 337.8 328.129 335 334.129 329.4C340.529 323.8 343.729 316.6 343.729 307.8C343.729 299.8 340.929 293.2 335.329 288C329.729 282.8 322.529 280.2 313.729 280.2H276.529V218.4H313.729C320.529 218.4 326.329 216 331.129 211.2C335.929 206.4 338.329 200.4 338.329 193.2C338.329 184.8 335.729 178.2 330.529 173.4C325.329 168.6 318.729 166.2 310.729 166.2C303.529 166.2 297.329 168.4 292.129 172.8C287.329 177.2 284.929 182.8 284.929 189.6H218.329C218.329 164.8 227.129 144.6 244.729 129C262.329 113 284.929 105 312.529 105C340.129 105 362.529 112.2 379.729 126.6C397.329 141 406.129 160 406.129 183.6C406.129 200.8 401.529 214.8 392.329 225.6C383.129 236 371.329 243.2 356.929 247.2C374.129 252 387.729 260.2 397.729 271.8C408.129 283.4 413.329 298 413.329 315.6C413.329 340.4 403.929 360.8 385.129 376.8C366.329 392.8 341.929 400.8 311.929 400.8Z" fill="currentColor"/>
-                            <path d="M103.864 167.6H78.6643V105.2H171.664V400.2H103.864V167.6Z" fill="currentColor"/>
-                            <path d="M311.929 400.8C281.129 400.8 255.929 392.4 236.329 375.6C217.129 358.8 207.529 337 207.529 310.2H277.729C277.729 318.2 280.729 324.8 286.729 330C292.729 335.2 300.729 337.8 310.729 337.8C320.329 337.8 328.129 335 334.129 329.4C340.529 323.8 343.729 316.6 343.729 307.8C343.729 299.8 340.929 293.2 335.329 288C329.729 282.8 322.529 280.2 313.729 280.2H276.529V218.4H313.729C320.529 218.4 326.329 216 331.129 211.2C335.929 206.4 338.329 200.4 338.329 193.2C338.329 184.8 335.729 178.2 330.529 173.4C325.329 168.6 318.729 166.2 310.729 166.2C303.529 166.2 297.329 168.4 292.129 172.8C287.329 177.2 284.929 182.8 284.929 189.6H218.329C218.329 164.8 227.129 144.6 244.729 129C262.329 113 284.929 105 312.529 105C340.129 105 362.529 112.2 379.729 126.6C397.329 141 406.129 160 406.129 183.6C406.129 200.8 401.529 214.8 392.329 225.6C383.129 236 371.329 243.2 356.929 247.2C374.129 252 387.729 260.2 397.729 271.8C408.129 283.4 413.329 298 413.329 315.6C413.329 340.4 403.929 360.8 385.129 376.8C366.329 392.8 341.929 400.8 311.929 400.8Z" stroke="var(--stroke-color)" stroke-width="2.4" mask="url(#path-4-mask)"/>
-                            <path d="M103.864 167.6H78.6643V105.2H171.664V400.2H103.864V167.6Z" stroke="var(--stroke-color)" stroke-width="2.4" mask="url(#path-4-mask)"/>
-                        </g>
-                        
-                        <g class="mix-blend-hard-light transition-all delay-400 opacity-100 duration-750 starting:opacity-0 motion-safe:starting:-translate-x-[102px] text-[#F3BEC7] dark:text-[#4B0600]">
-                            <mask id="path-5-mask" maskUnits="userSpaceOnUse" x="102.329" y="103" width="338" height="299" fill="black">
-                                <rect fill="white" x="102.329" y="103" width="338" height="299"/>
-                                <path d="M337.593 400.8C306.793 400.8 281.593 392.4 261.993 375.6C242.793 358.8 233.193 337 233.193 310.2H303.393C303.393 318.2 306.393 324.8 312.393 330C318.393 335.2 326.393 337.8 336.393 337.8C345.993 337.8 353.793 335 359.793 329.4C366.193 323.8 369.393 316.6 369.393 307.8C369.393 299.8 366.593 293.2 360.993 288C355.393 282.8 348.193 280.2 339.393 280.2H302.193V218.4H339.393C346.193 218.4 351.993 216 356.793 211.2C361.593 206.4 363.993 200.4 363.993 193.2C363.993 184.8 361.393 178.2 356.193 173.4C350.993 168.6 344.393 166.2 336.393 166.2C329.193 166.2 322.993 168.4 317.793 172.8C312.993 177.2 310.593 182.8 310.593 189.6H243.993C243.993 164.8 252.793 144.6 270.393 129C287.993 113 310.593 105 338.193 105C365.793 105 388.193 112.2 405.393 126.6C422.993 141 431.793 160 431.793 183.6C431.793 200.8 427.193 214.8 417.993 225.6C408.793 236 396.993 243.2 382.593 247.2C399.793 252 413.393 260.2 423.393 271.8C433.793 283.4 438.993 298 438.993 315.6C438.993 340.4 429.593 360.8 410.793 376.8C391.993 392.8 367.593 400.8 337.593 400.8Z"/>
-                                <path d="M129.529 167.6H104.329V105.2H197.329V400.2H129.529V167.6Z"/>
-                            </mask>
-                            <path d="M337.593 400.8C306.793 400.8 281.593 392.4 261.993 375.6C242.793 358.8 233.193 337 233.193 310.2H303.393C303.393 318.2 306.393 324.8 312.393 330C318.393 335.2 326.393 337.8 336.393 337.8C345.993 337.8 353.793 335 359.793 329.4C366.193 323.8 369.393 316.6 369.393 307.8C369.393 299.8 366.593 293.2 360.993 288C355.393 282.8 348.193 280.2 339.393 280.2H302.193V218.4H339.393C346.193 218.4 351.993 216 356.793 211.2C361.593 206.4 363.993 200.4 363.993 193.2C363.993 184.8 361.393 178.2 356.193 173.4C350.993 168.6 344.393 166.2 336.393 166.2C329.193 166.2 322.993 168.4 317.793 172.8C312.993 177.2 310.593 182.8 310.593 189.6H243.993C243.993 164.8 252.793 144.6 270.393 129C287.993 113 310.593 105 338.193 105C365.793 105 388.193 112.2 405.393 126.6C422.993 141 431.793 160 431.793 183.6C431.793 200.8 427.193 214.8 417.993 225.6C408.793 236 396.993 243.2 382.593 247.2C399.793 252 413.393 260.2 423.393 271.8C433.793 283.4 438.993 298 438.993 315.6C438.993 340.4 429.593 360.8 410.793 376.8C391.993 392.8 367.593 400.8 337.593 400.8Z" fill="currentColor"/>
-                            <path d="M129.529 167.6H104.329V105.2H197.329V400.2H129.529V167.6Z" fill="currentColor"/>
-                            <path d="M337.593 400.8C306.793 400.8 281.593 392.4 261.993 375.6C242.793 358.8 233.193 337 233.193 310.2H303.393C303.393 318.2 306.393 324.8 312.393 330C318.393 335.2 326.393 337.8 336.393 337.8C345.993 337.8 353.793 335 359.793 329.4C366.193 323.8 369.393 316.6 369.393 307.8C369.393 299.8 366.593 293.2 360.993 288C355.393 282.8 348.193 280.2 339.393 280.2H302.193V218.4H339.393C346.193 218.4 351.993 216 356.793 211.2C361.593 206.4 363.993 200.4 363.993 193.2C363.993 184.8 361.393 178.2 356.193 173.4C350.993 168.6 344.393 166.2 336.393 166.2C329.193 166.2 322.993 168.4 317.793 172.8C312.993 177.2 310.593 182.8 310.593 189.6H243.993C243.993 164.8 252.793 144.6 270.393 129C287.993 113 310.593 105 338.193 105C365.793 105 388.193 112.2 405.393 126.6C422.993 141 431.793 160 431.793 183.6C431.793 200.8 427.193 214.8 417.993 225.6C408.793 236 396.993 243.2 382.593 247.2C399.793 252 413.393 260.2 423.393 271.8C433.793 283.4 438.993 298 438.993 315.6C438.993 340.4 429.593 360.8 410.793 376.8C391.993 392.8 367.593 400.8 337.593 400.8Z" stroke="var(--stroke-color)" stroke-width="2.4" mask="url(#path-5-mask)"/>
-                            <path d="M129.529 167.6H104.329V105.2H197.329V400.2H129.529V167.6Z" stroke="var(--stroke-color)" stroke-width="2.4" mask="url(#path-5-mask)"/>
-                        </g>
-                    </svg>
-                    <div class="absolute inset-0 rounded-t-lg lg:rounded-t-none lg:rounded-r-lg shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]"></div>
+                <!-- شريط البحث المباشر -->
+                <div class="flex-1 max-w-sm hidden lg:block">
+                    <div class="relative">
+                        <input type="text" id="liveSearchInput" oninput="handleSearch(this.value)" placeholder="ابحث عن المنتجات، المواصفات، التصنيفات..." class="w-full bg-slate-100 border border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg text-xs py-2 pr-9 pl-3 transition outline-none">
+                        <svg class="w-4 h-4 text-slate-400 absolute right-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
                 </div>
-            </main>
+
+                <!-- إجراءات المستخدم وسلة الشراء -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <!-- سلة المشتريات -->
+                    <button onclick="openCartDrawer()" class="relative p-2 text-slate-700 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition flex items-center gap-2 border border-slate-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                        <span class="hidden sm:inline text-xs font-bold">السلة</span>
+                        <span id="cartCountBadge" class="w-5 h-5 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+                    </button>
+
+                    <!-- الإشعارات -->
+                    <button onclick="switchTab('notifications')" class="relative p-2 text-slate-700 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition border border-slate-200" title="الإشعارات">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        <span id="notifBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-red-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">0</span>
+                    </button>
+
+                    <!-- قسم حساب المستخدم: تسجيل الدخول أو القائمة الشخصية -->
+                    <div id="authContainer">
+                        <!-- يتم التبديل تلقائياً بين زر تسجيل الدخول وقائمة المستخدم المسجل -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- شريط روابط الهواتف المحمولة -->
+            <div class="flex md:hidden gap-1 border-t border-slate-100 py-2 overflow-x-auto text-xs font-semibold">
+                <button onclick="switchTab('catalog')" class="px-3 py-1.5 rounded text-blue-600 bg-blue-50">المنتجات</button>
+                <button onclick="switchTab('orders')" class="px-3 py-1.5 rounded text-slate-600">طلباتي</button>
+                <button onclick="switchTab('notifications')" class="px-3 py-1.5 rounded text-slate-600">الإشعارات</button>
+            </div>
         </div>
+    </header>
 
-        @if (Route::has('login'))
-            <div class="h-14.5 hidden lg:block"></div>
-        @endif
-    </body>
+    <!-- شريط التنبيهات اللحظي (Toast Notification) -->
+    <div id="toastContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4 pointer-events-none transition-all duration-300 opacity-0 -translate-y-4">
+        <div id="toastAlert" class="pointer-events-auto p-3.5 rounded-xl border shadow-lg flex items-center justify-between text-xs bg-white">
+            <div class="flex items-center gap-2.5">
+                <span id="toastIcon" class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-xs"></span>
+                <span id="toastMessage" class="font-bold text-slate-800"></span>
+            </div>
+            <button onclick="hideToast()" class="text-slate-400 hover:text-slate-700 font-bold px-1.5">×</button>
+        </div>
+    </div>
+
+    <!-- المحتوى الرئيسي للمتجر -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <!-- ======================================================== -->
+        <!-- 1. صفحة المنتجات والكتالوج -->
+        <!-- ======================================================== -->
+        <section id="page-catalog" class="page-tab active space-y-6">
+            
+            <!-- شريط التصنيفات والتحكم بالمنتجات -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                <!-- أزرار التصنيف -->
+                <div class="flex items-center gap-1.5 flex-wrap text-xs">
+                    <span class="text-slate-400 font-semibold ml-2">التصنيف:</span>
+                    <button onclick="filterByCategory('', this)" class="category-chip active px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">الكل</button>
+                    <button onclick="filterByCategory('إضاءة', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">إضاءة</button>
+                    <button onclick="filterByCategory('إلكترونيات', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">إلكترونيات</button>
+                    <button onclick="filterByCategory('أثاث', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">أثاث</button>
+                    <button onclick="filterByCategory('منزل', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">منزل</button>
+                </div>
+
+                <!-- زر إضافة منتج جديد (يظهر فقط عند تسجيل الدخول بصلاحية مشرف) -->
+                <div class="flex items-center gap-3">
+                    <button onclick="openProductModal()" id="btnAdminAddProduct" class="hidden px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span>إضافة منتج جديد</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- شبكة عرض المنتجات -->
+            <div id="productsGridContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- يتم التحميل التلقائي عبر JavaScript -->
+            </div>
+
+            <!-- شريط التنقل بين الصفحات -->
+            <div class="bg-white px-5 py-3.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between text-xs text-slate-600">
+                <span id="pageStatsLabel">جاري قراءة المنتجات...</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="navigateCatalogPage(-1)" id="btnPagePrev" class="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 font-bold transition disabled:opacity-40" disabled>السابق</button>
+                    <button onclick="navigateCatalogPage(1)" id="btnPageNext" class="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 font-bold transition disabled:opacity-40" disabled>التالي</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 2. صفحة الطلبات والمشتريات -->
+        <!-- ======================================================== -->
+        <section id="page-orders" class="page-tab space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 id="ordersMainTitle" class="text-base font-extrabold text-slate-900">سجل الطلبات والمشتريات</h2>
+                        <p id="ordersSubTitle" class="text-xs text-slate-500 mt-0.5">متابعة مسار معالجة الطلبات وحالات الشحن</p>
+                    </div>
+                    <button onclick="loadOrdersData()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition">تحديث القائمة</button>
+                </div>
+
+                <!-- جدول عرض الطلبات -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                                <th class="p-3.5">رقم الطلب</th>
+                                <th class="p-3.5">تفاصيل العناصر</th>
+                                <th class="p-3.5">المجموع الإجمالي</th>
+                                <th class="p-3.5">الحالة الحالية</th>
+                                <th class="p-3.5">تاريخ الإنشاء</th>
+                                <th class="p-3.5">الإجراء المتاح</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersListRows" class="divide-y divide-slate-100">
+                            <!-- صفوف الطلبات -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 3. صفحة الإشعارات والتنبيهات -->
+        <!-- ======================================================== -->
+        <section id="page-notifications" class="page-tab space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-base font-extrabold text-slate-900">سجل الإشعارات والتنبيهات</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">متابعة إشعارات تأكيد وشحن الطلبات وتحديثات الحساب</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="markAllNotificationsRead()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition">تحديد الكل كمقروء</button>
+                        <button onclick="loadNotificationsList()" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-lg text-xs transition">تحديث</button>
+                    </div>
+                </div>
+                <div id="notificationsContainer" class="space-y-3">
+                    <!-- الإشعارات -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- نافذة تسجيل الدخول الواقعية (Realistic Login Modal) -->
+    <div id="modalLogin" class="app-modal fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 border border-slate-200 shadow-2xl relative">
+            <button onclick="closeLoginModal()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-700 text-lg font-bold">✕</button>
+            
+            <div class="text-center mb-6">
+                <h3 class="text-lg font-black text-slate-900">تسجيل الدخول إلى حسابك</h3>
+                <p class="text-xs text-slate-500 mt-1">أدخل بريدك الإلكتروني وكلمة المرور للمتابعة</p>
+            </div>
+
+            <form onsubmit="handleLoginFormSubmit(event)" class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1.5">البريد الإلكتروني</label>
+                    <input type="email" id="inputLoginEmail" required placeholder="name@example.com" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition font-sans text-xs">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1.5">كلمة المرور</label>
+                    <input type="password" id="inputLoginPassword" required placeholder="••••••••" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition font-sans text-xs">
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] text-slate-500">
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="checkRememberMe" checked class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <span>تذكر بيانات دخولي</span>
+                    </label>
+                </div>
+
+                <button type="submit" id="btnLoginSubmit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition shadow-md shadow-blue-600/20 text-xs">
+                    تسجيل الدخول
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة منبثقة: الملف الشخصي وإدارة الجلسة -->
+    <div id="modalUserProfile" class="app-modal fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 border border-slate-200 shadow-2xl space-y-4 text-xs">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h4 class="font-extrabold text-sm text-slate-900">الملف الشخصي</h4>
+                <button onclick="closeProfileModal()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div id="profileAvatarLarge" class="w-10 h-10 rounded-full bg-blue-600 text-white font-black text-sm flex items-center justify-center">
+                        A
+                    </div>
+                    <div>
+                        <span id="profileDisplayName" class="font-bold text-slate-900 text-sm block"></span>
+                        <span id="profileDisplayRole" class="text-[11px] text-slate-500 font-semibold block"></span>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <span class="text-slate-400 block text-[11px] mb-0.5">البريد الإلكتروني:</span>
+                    <span id="profileDisplayEmail" class="font-mono text-slate-900 font-medium"></span>
+                </div>
+            </div>
+
+            <div class="pt-2 flex flex-col gap-2">
+                <button onclick="switchTab('orders'); closeProfileModal();" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-bold transition">
+                    عرض طلباتي
+                </button>
+                <button onclick="logoutUser()" class="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-bold transition border border-rose-200">
+                    تسجيل الخروج
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- درج سلة المشتريات (Cart Drawer) -->
+    <div id="cartDrawer" class="app-modal fixed inset-0 bg-black/40 z-50 justify-end p-0">
+        <div class="bg-white w-full max-w-md h-full flex flex-col shadow-2xl">
+            <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                    <h3 class="font-extrabold text-sm text-slate-900">سلة المشتريات</h3>
+                </div>
+                <button onclick="closeCartDrawer()" class="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 font-bold">✕</button>
+            </div>
+
+            <!-- عناصر السلة -->
+            <div id="cartItemsContainer" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <!-- عناصر السلة -->
+            </div>
+
+            <!-- الحساب والدفع -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 space-y-3">
+                <div class="flex items-center justify-between text-xs text-slate-600">
+                    <span>المجموع الفرعي:</span>
+                    <span id="cartSubtotal" class="font-bold text-slate-900">$0.00</span>
+                </div>
+                <div class="flex items-center justify-between text-xs text-slate-600">
+                    <span>رسوم الشحن:</span>
+                    <span class="text-emerald-600 font-bold">مجاني</span>
+                </div>
+                <div class="flex items-center justify-between text-sm font-extrabold text-slate-900 pt-2 border-t border-slate-200">
+                    <span>المجموع الإجمالي:</span>
+                    <span id="cartGrandTotal" class="text-blue-600 font-black">$0.00</span>
+                </div>
+                <button onclick="checkoutCart()" id="btnSubmitCart" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-md disabled:opacity-50">
+                    إتمام الطلب وتأكيد الشراء
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة منبثقة: إضافة منتج جديد (صلاحية المشرف فقط) -->
+    <div id="modalCreateProduct" class="app-modal fixed inset-0 bg-black/40 z-50 items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 border border-slate-200 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h4 class="font-extrabold text-sm text-slate-900">إضافة منتج جديد</h4>
+                <button onclick="closeProductModal()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+            </div>
+            <form onsubmit="submitProductForm(event)" class="mt-4 space-y-3.5 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">اسم المنتج</label>
+                    <input type="text" id="formProductName" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">الوصف</label>
+                    <textarea id="formProductDesc" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">السعر ($)</label>
+                        <input type="number" step="0.01" id="formProductPrice" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">الكمية في المخزون</label>
+                        <input type="number" id="formProductStock" required min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">التصنيف</label>
+                    <select id="formProductCategory" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                        <option value="إضاءة">إضاءة</option>
+                        <option value="إلكترونيات">إلكترونيات</option>
+                        <option value="أثاث">أثاث</option>
+                        <option value="منزل">منزل</option>
+                    </select>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="submit" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition shadow-xs">حفظ المنتج</button>
+                    <button type="button" onclick="closeProductModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة منبثقة: الشراء السريع -->
+    <div id="modalInstantCheckout" class="app-modal fixed inset-0 bg-black/40 z-50 items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 border border-slate-200 shadow-2xl text-xs space-y-4">
+            <h4 class="font-extrabold text-sm text-slate-900 pb-3 border-b border-slate-100">تأكيد طلب الشراء</h4>
+            
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                <div id="instantProdTitle" class="font-extrabold text-sm text-slate-900"></div>
+                <div id="instantProdPrice" class="text-blue-600 font-black"></div>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">الكمية المطلوبة:</label>
+                <input type="number" id="instantProdQty" value="1" min="1" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-sm">
+            </div>
+
+            <div class="text-slate-500 bg-slate-50 p-2.5 rounded-lg text-[11px] flex items-center justify-between">
+                <span>المخزون المتوفر:</span>
+                <span id="instantProdAvailable" class="font-extrabold text-slate-900"></span>
+            </div>
+
+            <div class="pt-2 flex gap-2">
+                <button onclick="confirmInstantOrder()" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition shadow-xs">تأكيد الشراء</button>
+                <button onclick="closeInstantCheckoutModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة منبثقة: واجهة عرض تفاصيل الطلب (Order Details View) -->
+    <div id="modalOrderDetails" class="app-modal fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col border border-slate-200 shadow-2xl overflow-hidden text-xs">
+            <!-- الهيدر -->
+            <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 id="orderDetailsId" class="text-base font-black text-slate-900 font-mono">طلب #--</h3>
+                            <span id="orderDetailsStatusBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-blue-50 text-blue-700 border-blue-200"></span>
+                        </div>
+                        <p id="orderDetailsDate" class="text-[11px] text-slate-500 mt-0.5 font-medium"></p>
+                    </div>
+                </div>
+                <button onclick="closeOrderDetailsModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 font-bold transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- جسم النافذة (محتوى تفاصيل الطلب) -->
+            <div class="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
+                <!-- شريط تتبع ومسار معالجة الطلب اللحظي -->
+                <div id="orderStatusTracker" class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <!-- يتم بناؤه وتحديثه ديناميكياً حسب حالة الطلب -->
+                </div>
+
+                <!-- جدول قائمة المنتجات المحجوزة في الطلب -->
+                <div>
+                    <h4 class="font-extrabold text-xs text-slate-900 mb-2.5 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                        <span>المنتجات المطلوبة</span>
+                    </h4>
+                    <div class="border border-slate-200 rounded-xl overflow-hidden">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                                <tr>
+                                    <th class="p-3">اسم المنتج</th>
+                                    <th class="p-3 text-center">الكمية</th>
+                                    <th class="p-3 text-left">سعر القطعة</th>
+                                    <th class="p-3 text-left">الإجمالي الفرعي</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderDetailsItemsList" class="divide-y divide-slate-100 bg-white">
+                                <!-- تملأ بالمنتجات والأسعار -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- معلومات الشحن والملخص المالي -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <!-- معلومات الشحن والاستلام -->
+                    <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2 text-slate-600">
+                        <span class="font-bold text-slate-900 block text-xs">معلومات الشحن والاستلام</span>
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span>طريقة التوصيل:</span>
+                            <span class="font-bold text-slate-800">شحن سريع ومجاني</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span>طريقة الدفع:</span>
+                            <span class="font-bold text-slate-800">الدفع نقداً عند الاستلام</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span>الضمان:</span>
+                            <span class="font-bold text-emerald-700">منتجات أصلية 100% مع ضمان استبدال</span>
+                        </div>
+                    </div>
+
+                    <!-- الملخص المالي -->
+                    <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
+                        <span class="font-bold text-slate-900 block text-xs">الملخص المالي للطلب</span>
+                        <div class="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>مجموع المنتجات:</span>
+                            <span id="orderDetailsSubtotal" class="font-mono font-bold text-slate-800">$0.00</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>رسوم الشحن:</span>
+                            <span class="text-emerald-600 font-bold">مجاني</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs font-black text-slate-900 pt-2 border-t border-slate-200">
+                            <span>المبلغ الإجمالي المستحق:</span>
+                            <span id="orderDetailsGrandTotal" class="font-mono text-blue-600 text-sm font-black">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- أزرار تحكم المشرف (تظهر فقط للمشرف لتعديل حالة الطلب مباشرة) -->
+                <div id="orderDetailsAdminActions" class="hidden p-3.5 rounded-xl border border-amber-200 bg-amber-50 space-y-2">
+                    <span class="font-bold text-amber-900 block text-xs">إدارة حالة الطلب (صلاحية المشرف):</span>
+                    <div id="orderDetailsAdminButtons" class="flex items-center gap-2 flex-wrap">
+                        <!-- تملأ برمجياً -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- الفوتر وإجراءات الطباعة والإغلاق -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
+                <button onclick="printOrderDetails()" class="px-3.5 py-2 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold transition flex items-center gap-1.5 text-xs">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    <span>طباعة الفاتورة</span>
+                </button>
+                <button onclick="closeOrderDetailsModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-bold transition text-xs shadow-xs">
+                    إغلاق
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- تذييل الصفحة (Footer) -->
+    <footer class="mt-auto py-8 bg-white border-t border-slate-200 text-slate-600 text-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-slate-900 text-sm">سوق التقنية</span>
+                    <span class="text-slate-300">|</span>
+                    <span class="text-slate-500">متجرك الإلكتروني المفضل</span>
+                </div>
+                <div class="flex items-center gap-6 text-slate-500 font-medium">
+                    <a href="#" class="hover:text-blue-600 transition">الشروط والأحكام</a>
+                    <a href="#" class="hover:text-blue-600 transition">سياسة الخصوصية</a>
+                    <a href="#" class="hover:text-blue-600 transition">خدمة العملاء</a>
+                    <a href="#" class="hover:text-blue-600 transition">الضمان والاسترجاع</a>
+                </div>
+                <p class="text-slate-400">© 2026 سوق التقنية. جميع الحقوق محفوظة.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- منطق العمل والاتصال بخدمات المتجر -->
+    <script>
+        const API_PREFIX = '/api/v1';
+        
+        let sessionUser = {
+            token: '',
+            email: '',
+            name: '',
+            role: 'guest'
+        };
+
+        let currentActiveCategory = '';
+        let currentCatalogPage = 1;
+        let instantCheckoutProduct = null;
+        let cartItems = [];
+
+        // التهيئة عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', async () => {
+            switchTab('catalog');
+
+            const cachedToken = localStorage.getItem('store_token');
+            const cachedEmail = localStorage.getItem('store_email');
+
+            if (cachedToken && cachedEmail) {
+                sessionUser.token = cachedToken;
+                sessionUser.email = cachedEmail;
+                sessionUser.name = localStorage.getItem('store_name') || 'مستخدم';
+                sessionUser.role = localStorage.getItem('store_role') || 'customer';
+                updateAuthInterface();
+            } else {
+                // الوضع الافتراضي عند عدم وجود جلسة محفوظة
+                sessionUser = { token: '', email: '', name: '', role: 'guest' };
+                updateAuthInterface();
+            }
+
+            loadCatalogProducts();
+            if (sessionUser.token) {
+                loadNotificationsList();
+            }
+            renderCartDrawer();
+        });
+
+        // التبديل بين الأقسام
+        function switchTab(tabId) {
+            if (tabId === 'orders' && !sessionUser.token) {
+                showToastNotification('يرجى تسجيل الدخول أولاً لاستعراض طلباتك', 'info');
+                openLoginModal();
+                return;
+            }
+
+            if (tabId === 'notifications' && !sessionUser.token) {
+                showToastNotification('يرجى تسجيل الدخول لمشاهدة الإشعارات', 'info');
+                openLoginModal();
+                return;
+            }
+
+            document.querySelectorAll('.page-tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('text-slate-600');
+            });
+
+            const targetSection = document.getElementById(`page-${tabId}`);
+            if (targetSection) targetSection.classList.add('active');
+
+            const targetBtn = document.getElementById(`nav-${tabId}`);
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+                targetBtn.classList.remove('text-slate-600');
+            }
+
+            if (tabId === 'orders') loadOrdersData();
+            if (tabId === 'notifications') loadNotificationsList();
+        }
+
+        // ========================================================
+        // إدارة الحساب والمصادقة (Authentication Flow)
+        // ========================================================
+        function handleApiError(res, data, defaultMsg = 'حدث خطأ، يرجى المحاولة مرة أخرى') {
+            const err = data?.error || {};
+            const code = err.code || '';
+            const msg = err.message || data?.message || '';
+            const details = err.details;
+
+            // 0. بيانات الدخول غير صحيحة (INVALID_CREDENTIALS)
+            if (code === 'INVALID_CREDENTIALS') {
+                showToastNotification('البريد الإلكتروني أو كلمة المرور غير صحيحة', 'error');
+                return;
+            }
+
+            // 1. انتهاء الجلسة أو طلب تسجيل الدخول (401 UNAUTHENTICATED)
+            if (res.status === 401 || code === 'UNAUTHENTICATED') {
+                showToastNotification('انتهت الجلسة، يرجى تسجيل الدخول للمتابعة', 'info');
+                logoutUser();
+                openLoginModal();
+                return;
+            }
+
+            // 2. تقييد الصلاحيات (403 FORBIDDEN)
+            if (res.status === 403 || code === 'FORBIDDEN') {
+                showToastNotification('عذراً، هذا الإجراء غير متاح لحسابك', 'error');
+                return;
+            }
+
+            // 3. العنصر غير موجود (404 NOT_FOUND)
+            if (res.status === 404 || code === 'NOT_FOUND') {
+                showToastNotification('العنصر المطلوب غير متوفر أو تم حذفه', 'error');
+                return;
+            }
+
+            // 4. تعارض البيانات ونقص المخزون والتزامن (409 CONFLICT)
+            if (res.status === 409) {
+                if (code === 'INSUFFICIENT_STOCK') {
+                    showToastNotification('عذراً، نفدت الكمية المطلوبة من المخزون', 'error');
+                    loadCatalogProducts(currentActiveCategory);
+                    return;
+                }
+                if (code === 'RESERVATION_CONFLICT') {
+                    showToastNotification('تم حجز القطعة الأخيرة قبل قليل من قبل مشترٍ آخر', 'error');
+                    loadCatalogProducts(currentActiveCategory);
+                    return;
+                }
+                if (code === 'INVALID_STATUS_TRANSITION') {
+                    showToastNotification('لا يمكن إلغاء الطلب بعد أن تم شحنه', 'error');
+                    return;
+                }
+                showToastNotification('تعذر إتمام العملية بسبب تعارض مؤقت، يرجى المحاولة مجدداً', 'error');
+                loadCatalogProducts(currentActiveCategory);
+                return;
+            }
+
+            // 5. التحقق من صحة المدخلات (422 VALIDATION_FAILED)
+            if (res.status === 422 || code === 'VALIDATION_FAILED') {
+                let detailText = '';
+                if (details && typeof details === 'object') {
+                    const firstList = Object.values(details)[0];
+                    if (Array.isArray(firstList) && firstList.length > 0) {
+                        const rawDetail = firstList[0];
+                        if (rawDetail.includes('email')) detailText = 'البريد الإلكتروني المدخل غير صالح';
+                        else if (rawDetail.includes('password')) detailText = 'كلمة المرور غير صحيحة';
+                        else if (rawDetail.includes('price')) detailText = 'يرجى إدخال سعر صحيح للمنتج';
+                        else if (rawDetail.includes('quantity')) detailText = 'يرجى تحديد كمية صحيحة';
+                        else if (rawDetail.includes('stock')) detailText = 'يرجى إدخال كمية مخزون صحيحة';
+                        else if (rawDetail.includes('name')) detailText = 'يرجى إدخال اسم المنتج';
+                        else detailText = rawDetail;
+                    }
+                }
+                showToastNotification(detailText || 'يرجى التأكد من صحة البيانات المدخلة', 'error');
+                return;
+            }
+
+            // 6. تجاوز عدد المحاولات (429 TOO_MANY_REQUESTS)
+            if (res.status === 429 || code === 'TOO_MANY_REQUESTS') {
+                showToastNotification('محاولات متكررة، يرجى الانتظار دقيقة قبل المحاولة مجدداً', 'error');
+                return;
+            }
+
+            // 7. ضغط أو تعطل خدمة المخزون (503 INVENTORY_UNAVAILABLE)
+            if (res.status === 503 || code === 'INVENTORY_UNAVAILABLE') {
+                showToastNotification('المتجر يواجه ضغطاً مؤقتاً، يرجى إعادة المحاولة بعد لحظات', 'error');
+                return;
+            }
+
+            // 8. أخطاء الخادم العامة (500 INTERNAL_ERROR)
+            if (res.status >= 500) {
+                showToastNotification('حدث خطأ غير متوقع، يرجى المحاولة لاحقاً', 'error');
+                return;
+            }
+
+            // الافتراضي
+            showToastNotification(defaultMsg, 'error');
+        }
+
+        function openLoginModal() {
+            document.getElementById('modalLogin').classList.add('active');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('modalLogin').classList.remove('active');
+        }
+
+        async function handleLoginFormSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('inputLoginEmail').value.trim();
+            const password = document.getElementById('inputLoginPassword').value;
+
+            if (!email || !password) {
+                showToastNotification('يرجى إدخال البريد الإلكتروني وكلمة المرور', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('btnLoginSubmit');
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'جاري التحقق...';
+
+            try {
+                const response = await fetch(`${API_PREFIX}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    sessionUser = {
+                        token: data.access_token,
+                        email: data.user.email,
+                        name: data.user.name,
+                        role: data.user.role
+                    };
+
+                    localStorage.setItem('store_token', sessionUser.token);
+                    localStorage.setItem('store_email', sessionUser.email);
+                    localStorage.setItem('store_name', sessionUser.name);
+                    localStorage.setItem('store_role', sessionUser.role);
+
+                    closeLoginModal();
+                    updateAuthInterface();
+                    showToastNotification(`مرحباً بك مجدداً، ${sessionUser.name}`, 'success');
+                    loadCatalogProducts(currentActiveCategory);
+                    loadNotificationsList();
+                } else {
+                    handleApiError(response, data, 'فشل تسجيل الدخول، يرجى التأكد من البريد وكلمة المرور');
+                }
+            } catch (err) {
+                showToastNotification('تعذر تسجيل الدخول حالياً، يرجى إعادة المحاولة', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'تسجيل الدخول';
+            }
+        }
+
+        function logoutUser() {
+            sessionUser = { token: '', email: '', name: '', role: 'guest' };
+            localStorage.removeItem('store_token');
+            localStorage.removeItem('store_email');
+            localStorage.removeItem('store_name');
+            localStorage.removeItem('store_role');
+
+            closeProfileModal();
+            updateAuthInterface();
+            showToastNotification('تم تسجيل الخروج بنجاح', 'info');
+            switchTab('catalog');
+            loadCatalogProducts(currentActiveCategory);
+        }
+
+        function updateAuthInterface() {
+            const container = document.getElementById('authContainer');
+            const addProductBtn = document.getElementById('btnAdminAddProduct');
+
+            if (!sessionUser.token) {
+                // حالة الزائر غير المسجل
+                container.innerHTML = `
+                    <button onclick="openLoginModal()" class="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                        <span>تسجيل الدخول</span>
+                    </button>
+                `;
+                if (addProductBtn) addProductBtn.classList.add('hidden');
+                return;
+            }
+
+            // حالة المستخدم المسجل
+            const roleName = sessionUser.role === 'admin' ? 'مشرف' : 'زبون';
+            const roleBadgeClass = sessionUser.role === 'admin' ? 'text-purple-700 bg-purple-50' : 'text-blue-700 bg-blue-50';
+
+            container.innerHTML = `
+                <button onclick="openProfileModal()" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded-lg border border-slate-200 bg-white transition">
+                    <div class="w-7 h-7 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center">
+                        ${sessionUser.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="text-right hidden sm:block">
+                        <span class="text-xs font-bold text-slate-900 block leading-tight">${sessionUser.name}</span>
+                        <span class="text-[10px] font-semibold block leading-tight ${roleBadgeClass}">${roleName}</span>
+                    </div>
+                </button>
+            `;
+
+            // إظهار زر إضافة منتج جديد إذا كان مشرفاً
+            if (sessionUser.role === 'admin') {
+                if (addProductBtn) addProductBtn.classList.remove('hidden');
+            } else {
+                if (addProductBtn) addProductBtn.classList.add('hidden');
+            }
+
+            // تحديث بيانات الملف الشخصي
+            document.getElementById('profileDisplayName').innerText = sessionUser.name;
+            document.getElementById('profileDisplayEmail').innerText = sessionUser.email;
+            document.getElementById('profileDisplayRole').innerText = sessionUser.role === 'admin' ? 'مشرف المتجر' : 'زبون معتمد';
+            document.getElementById('profileAvatarLarge').innerText = sessionUser.name.charAt(0).toUpperCase();
+        }
+
+        // ========================================================
+        // إدارة الكتالوج وعرض المنتجات
+        // ========================================================
+        async function loadCatalogProducts(category = '') {
+            currentActiveCategory = category;
+            try {
+                let url = `${API_PREFIX}/products?page=${currentCatalogPage}&per_page=8`;
+                if (category) url += `&category=${encodeURIComponent(category)}`;
+
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                const json = await res.json();
+
+                if (res.ok) {
+                    renderCatalogCards(json.data || []);
+
+                    if (json.meta) {
+                        document.getElementById('pageStatsLabel').innerText = `الصفحة ${json.meta.current_page} من ${json.meta.last_page} (الإجمالي: ${json.meta.total} منتج)`;
+                        document.getElementById('btnPagePrev').disabled = json.meta.current_page <= 1;
+                        document.getElementById('btnPageNext').disabled = json.meta.current_page >= json.meta.last_page;
+                    }
+                } else {
+                    handleApiError(res, json, 'تعذر تحميل المنتجات');
+                    const container = document.getElementById('productsGridContainer');
+                    if (res.status === 503) {
+                        container.innerHTML = `
+                            <div class="col-span-full bg-amber-50 border border-amber-200 p-8 rounded-2xl text-center space-y-2">
+                                <svg class="w-8 h-8 text-amber-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                <p class="font-bold text-amber-900 text-sm">تعذر تحميل قائمة المنتجات حالياً</p>
+                                <p class="text-xs text-amber-700">نواجه ضغطاً مؤقتاً في تحديث بيانات المتجر، يرجى المحاولة بعد لحظات.</p>
+                                <button onclick="loadCatalogProducts()" class="mt-2 px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs transition">إعادة المحاولة</button>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function filterByCategory(cat, btn) {
+            currentCatalogPage = 1;
+            document.querySelectorAll('.category-chip').forEach(b => {
+                b.className = 'category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition';
+            });
+            if (btn) {
+                btn.className = 'category-chip active px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition';
+            }
+            loadCatalogProducts(cat);
+        }
+
+        function navigateCatalogPage(step) {
+            currentCatalogPage += step;
+            loadCatalogProducts(currentActiveCategory);
+        }
+
+        function handleSearch(term) {
+            const query = term.trim().toLowerCase();
+            const cards = document.querySelectorAll('.product-item-card');
+            cards.forEach(card => {
+                const text = card.innerText.toLowerCase();
+                card.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        function renderCatalogCards(products) {
+            const container = document.getElementById('productsGridContainer');
+            container.innerHTML = '';
+
+            if (products.length === 0) {
+                container.innerHTML = '<div class="col-span-full bg-white p-12 rounded-2xl border border-slate-200 text-center text-slate-400 text-xs">لا توجد منتجات مسجلة في هذا التصنيف حالياً.</div>';
+                return;
+            }
+
+            products.forEach(p => {
+                let stockText = '';
+                let stockPillClass = '';
+                const isNullStock = p.stock === null || p.stock === undefined;
+                const stock = isNullStock ? null : Number(p.stock);
+                const isAvailable = stock !== null && stock > 0;
+
+                if (isNullStock) {
+                    stockText = 'غير متوفر';
+                    stockPillClass = 'bg-slate-100 text-slate-700 border-slate-300';
+                } else if (stock <= 0) {
+                    stockText = 'نفد من المخزون';
+                    stockPillClass = 'bg-rose-50 text-rose-700 border-rose-200';
+                } else if (stock <= 3) {
+                    stockText = `متبقي ${stock} فقط!`;
+                    stockPillClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                } else {
+                    stockText = `متوفر: ${stock} قطعة`;
+                    stockPillClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                }
+
+                const card = document.createElement('div');
+                card.className = 'product-item-card bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col justify-between hover:border-slate-300 hover:shadow-lg transition duration-200 group';
+                card.innerHTML = `
+                    <div>
+                        <div class="h-44 bg-gradient-to-tr from-slate-100 to-slate-50 border-b border-slate-100 flex items-center justify-center relative p-4 group-hover:scale-[1.02] transition duration-200">
+                            <div class="w-20 h-20 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                            </div>
+                            <span class="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-md border ${stockPillClass}">
+                                ${stockText}
+                            </span>
+                        </div>
+                        <div class="p-5">
+                            <span class="text-[10px] font-extrabold uppercase text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">${p.category}</span>
+                            <h3 class="font-extrabold text-sm text-slate-900 mt-2 leading-snug">${p.name}</h3>
+                            <p class="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">${p.description || 'لا يوجد وصف متاح للمنتج.'}</p>
+                        </div>
+                    </div>
+                    <div class="p-5 pt-0 border-t border-slate-100 mt-2 flex flex-col gap-2.5">
+                        <div class="flex items-center justify-between pt-3">
+                            <span class="text-xs text-slate-400 font-medium">السعر:</span>
+                            <span class="text-lg font-black text-slate-900 font-mono">$${parseFloat(p.price).toFixed(2)}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="addToCart(${JSON.stringify(p).replace(/"/g, '&quot;')})"
+                                ${!isAvailable ? 'disabled' : ''}
+                                class="py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${isAvailable ? 'bg-slate-100 hover:bg-slate-200 text-slate-800' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}">
+                                <span>+ السلة</span>
+                            </button>
+                            <button onclick="openInstantCheckout(${JSON.stringify(p).replace(/"/g, '&quot;')})"
+                                ${!isAvailable ? 'disabled' : ''}
+                                class="py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${isAvailable ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}">
+                                <span>شراء سريع</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ========================================================
+        // إدارة سلة المشتريات
+        // ========================================================
+        function addToCart(product) {
+            if (product.stock === null || product.stock === undefined || product.stock <= 0) {
+                showToastNotification('عذراً، هذا المنتج غير متوفر حالياً', 'error');
+                return;
+            }
+
+            const existing = cartItems.find(i => i.id === product.id);
+            if (existing) {
+                if (existing.qty < product.stock) {
+                    existing.qty += 1;
+                    showToastNotification(`تمت زيادة كمية: ${product.name}`, 'info');
+                } else {
+                    showToastNotification('تم الوصول للحد الأقصى المتوفر من هذا المنتج', 'error');
+                }
+            } else {
+                cartItems.push({
+                    id: product.id,
+                    name: product.name,
+                    price: parseFloat(product.price),
+                    stock: product.stock,
+                    qty: 1
+                });
+                showToastNotification(`تمت إضافة ${product.name} إلى السلة`, 'success');
+            }
+            renderCartDrawer();
+        }
+
+        function updateCartQty(productId, delta) {
+            const item = cartItems.find(i => i.id === productId);
+            if (!item) return;
+
+            item.qty += delta;
+            if (item.qty <= 0) {
+                cartItems = cartItems.filter(i => i.id !== productId);
+            } else if (item.qty > item.stock) {
+                item.qty = item.stock;
+                showToastNotification('لا تتوفر كمية إضافية من هذا المنتج حالياً', 'error');
+            }
+            renderCartDrawer();
+        }
+
+        function renderCartDrawer() {
+            const container = document.getElementById('cartItemsContainer');
+            const countBadge = document.getElementById('cartCountBadge');
+            const totalCount = cartItems.reduce((acc, cur) => acc + cur.qty, 0);
+            countBadge.innerText = totalCount;
+
+            container.innerHTML = '';
+            if (cartItems.length === 0) {
+                container.innerHTML = '<div class="py-16 text-center text-slate-400 text-xs">سلة المشتريات فارغة حالياً.</div>';
+                document.getElementById('cartSubtotal').innerText = '$0.00';
+                document.getElementById('cartGrandTotal').innerText = '$0.00';
+                document.getElementById('btnSubmitCart').disabled = true;
+                return;
+            }
+
+            document.getElementById('btnSubmitCart').disabled = false;
+            let subtotal = 0;
+
+            cartItems.forEach(item => {
+                const itemTotal = item.price * item.qty;
+                subtotal += itemTotal;
+
+                const row = document.createElement('div');
+                row.className = 'p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between text-xs shadow-2xs';
+                row.innerHTML = `
+                    <div class="flex-1 pr-2">
+                        <div class="font-bold text-slate-900">${item.name}</div>
+                        <div class="text-slate-500 font-mono text-[11px] mt-0.5">$${item.price.toFixed(2)} × ${item.qty}</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-extrabold text-slate-900 font-mono pl-2">$${itemTotal.toFixed(2)}</span>
+                        <div class="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
+                            <button onclick="updateCartQty(${item.id}, -1)" class="px-2 py-1 hover:bg-slate-200 font-bold text-slate-600">-</button>
+                            <span class="px-2 font-mono font-bold text-slate-800 text-[11px]">${item.qty}</span>
+                            <button onclick="updateCartQty(${item.id}, 1)" class="px-2 py-1 hover:bg-slate-200 font-bold text-slate-600">+</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+
+            document.getElementById('cartSubtotal').innerText = `$${subtotal.toFixed(2)}`;
+            document.getElementById('cartGrandTotal').innerText = `$${subtotal.toFixed(2)}`;
+        }
+
+        function openCartDrawer() {
+            document.getElementById('cartDrawer').classList.add('active');
+        }
+
+        function closeCartDrawer() {
+            document.getElementById('cartDrawer').classList.remove('active');
+        }
+
+        async function checkoutCart() {
+            if (cartItems.length === 0) return;
+
+            if (!sessionUser.token) {
+                showToastNotification('يرجى تسجيل الدخول أولاً لإتمام طلب الشراء', 'info');
+                closeCartDrawer();
+                openLoginModal();
+                return;
+            }
+
+            const payloadItems = cartItems.map(i => ({
+                product_id: i.id,
+                quantity: i.qty
+            }));
+
+            try {
+                const res = await fetch(`${API_PREFIX}/orders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${sessionUser.token}`
+                    },
+                    body: JSON.stringify({ items: payloadItems })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    cartItems = [];
+                    renderCartDrawer();
+                    closeCartDrawer();
+                    showToastNotification(`تم تأكيد الطلب بنجاح برقم #${data.order.id}`, 'success');
+                    switchTab('orders');
+                    loadCatalogProducts(currentActiveCategory);
+                    openOrderDetails(data.order.id);
+                } else {
+                    handleApiError(res, data, 'فشل إتمام طلب الشراء');
+                }
+            } catch (err) {
+                showToastNotification('تعذر تأكيد الطلب، يرجى المحاولة مرة أخرى', 'error');
+            }
+        }
+
+        // ========================================================
+        // الشراء السريع
+        // ========================================================
+        function openInstantCheckout(prod) {
+            if (!sessionUser.token) {
+                showToastNotification('يرجى تسجيل الدخول أولاً للشراء السريع', 'info');
+                openLoginModal();
+                return;
+            }
+
+            if (prod.stock === null || prod.stock === undefined || prod.stock <= 0) {
+                showToastNotification('عذراً، هذا المنتج غير متوفر حالياً', 'error');
+                return;
+            }
+
+            instantCheckoutProduct = prod;
+            document.getElementById('instantProdTitle').innerText = prod.name;
+            document.getElementById('instantProdPrice').innerText = `$${parseFloat(prod.price).toFixed(2)}`;
+            document.getElementById('instantProdAvailable').innerText = (prod.stock !== null && prod.stock !== undefined) ? `${prod.stock} قطعة` : 'غير متوفر';
+            document.getElementById('instantProdQty').value = 1;
+            document.getElementById('instantProdQty').max = prod.stock || 1;
+            document.getElementById('modalInstantCheckout').classList.add('active');
+        }
+
+        function closeInstantCheckoutModal() {
+            document.getElementById('modalInstantCheckout').classList.remove('active');
+        }
+
+        async function confirmInstantOrder() {
+            const qty = parseInt(document.getElementById('instantProdQty').value);
+            if (!qty || qty < 1) {
+                showToastNotification('يرجى تحديد كمية صحيحة', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_PREFIX}/orders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${sessionUser.token}`
+                    },
+                    body: JSON.stringify({
+                        items: [{ product_id: instantCheckoutProduct.id, quantity: qty }]
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    closeInstantCheckoutModal();
+                    showToastNotification(`تم إنشاء الطلب بنجاح برقم #${data.order.id}`, 'success');
+                    loadCatalogProducts(currentActiveCategory);
+                    switchTab('orders');
+                    openOrderDetails(data.order.id);
+                } else {
+                    handleApiError(res, data, 'فشل حجز وتأكيد طلب الشراء');
+                }
+            } catch (err) {
+                showToastNotification('تعذر إتمام عملية الشراء، يرجى إعادة المحاولة', 'error');
+            }
+        }
+
+        // ========================================================
+        // إدارة ومتابعة الطلبات
+        // ========================================================
+        async function loadOrdersData() {
+            if (!sessionUser.token) return;
+
+            try {
+                const res = await fetch(`${API_PREFIX}/orders`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${sessionUser.token}`
+                    }
+                });
+
+                const json = await res.json();
+                if (res.ok) {
+                    renderOrdersTableRows(json.data || []);
+
+                    if (sessionUser.role === 'admin') {
+                        document.getElementById('ordersMainTitle').innerText = 'كافة طلبات المتجر (صلاحية المشرف)';
+                        document.getElementById('ordersSubTitle').innerText = 'المشرف يملك الحق بتغيير حالة شحن أي طلب وتتبع مسار المعالجة';
+                    } else {
+                        document.getElementById('ordersMainTitle').innerText = 'سجل طلباتي الشخصية';
+                        document.getElementById('ordersSubTitle').innerText = 'استعراض ومتابعة مسار معالجة طلباتك';
+                    }
+                } else {
+                    handleApiError(res, json, 'تعذر تحميل سجل الطلبات');
+                }
+            } catch (err) {
+                console.error(err);
+                showToastNotification('تعذر تحديث سجل الطلبات حالياً', 'error');
+            }
+        }
+
+        function renderOrdersTableRows(orders) {
+            const tbody = document.getElementById('ordersListRows');
+            tbody.innerHTML = '';
+
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400">لا توجد طلبات مسجلة حالياً.</td></tr>';
+                return;
+            }
+
+            const statusBadges = {
+                'pending': 'bg-blue-50 text-blue-700 border-blue-200',
+                'placed': 'bg-blue-50 text-blue-700 border-blue-200',
+                'confirmed': 'bg-blue-50 text-blue-700 border-blue-200',
+                'shipped': 'bg-amber-50 text-amber-700 border-amber-200',
+                'delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                'cancelled': 'bg-rose-50 text-rose-700 border-rose-200',
+                'failed': 'bg-rose-50 text-rose-700 border-rose-200',
+                'rejected': 'bg-rose-50 text-rose-700 border-rose-200'
+            };
+
+            const statusNames = {
+                'pending': 'قيد الانتظار',
+                'placed': 'تم الإرسال',
+                'confirmed': 'مؤكد',
+                'shipped': 'قيد الشحن',
+                'delivered': 'تم التسليم',
+                'cancelled': 'ملغي',
+                'failed': 'فشل المعالجة',
+                'rejected': 'مرفوض'
+            };
+
+            orders.forEach(order => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+                const itemsSummary = (order.items || []).map(i => `${i.name} (${i.quantity})`).join('، ');
+
+                let actionHtml = '';
+                if (sessionUser.role === 'admin') {
+                    actionHtml = `
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <button onclick="openOrderDetails(${order.id})" class="px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold border border-blue-200 transition">
+                                عرض الطلب
+                            </button>
+                            ${(order.status === 'placed' || order.status === 'confirmed') ? `
+                                <button onclick="requestOrderStatusUpdate(${order.id}, 'shipped')" class="px-2.5 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-200 transition">شحن</button>
+                                <button onclick="requestOrderStatusUpdate(${order.id}, 'cancelled')" class="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-800 text-[11px] font-bold border border-rose-200 transition">إلغاء</button>
+                            ` : ''}
+                            ${order.status === 'shipped' ? `
+                                <button onclick="requestOrderStatusUpdate(${order.id}, 'delivered')" class="px-2.5 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-200 transition">تسليم</button>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    // للزبون: إجراء عرض تفاصيل الطلب والفاتورة
+                    actionHtml = `
+                        <button onclick="openOrderDetails(${order.id})" class="px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold border border-blue-200 transition flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <span>عرض الطلب</span>
+                        </button>
+                    `;
+                }
+
+                tr.innerHTML = `
+                    <td class="p-3.5 font-mono font-bold">
+                        <button onclick="openOrderDetails(${order.id})" class="text-blue-600 hover:text-blue-800 hover:underline">#${order.id}</button>
+                    </td>
+                    <td class="p-3.5 text-slate-700 max-w-xs">${itemsSummary}</td>
+                    <td class="p-3.5 font-bold text-slate-900 font-mono">$${parseFloat(order.total).toFixed(2)}</td>
+                    <td class="p-3.5">
+                        <span class="px-2.5 py-1 rounded-md text-[10px] font-bold border ${statusBadges[order.status] || 'bg-slate-100'}">
+                            ${statusNames[order.status] || order.status}
+                        </span>
+                    </td>
+                    <td class="p-3.5 text-slate-500 text-[11px] font-mono">${order.created_at ? new Date(order.created_at).toLocaleDateString('ar-SY') : '-'}</td>
+                    <td class="p-3.5">${actionHtml}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ========================================================
+        // واجهة عرض وتفاصيل الطلب (Show Order Details)
+        // ========================================================
+        async function openOrderDetails(orderId) {
+            if (!sessionUser.token) {
+                showToastNotification('يرجى تسجيل الدخول أولاً لعرض تفاصيل الطلب', 'info');
+                openLoginModal();
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_PREFIX}/orders/${orderId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${sessionUser.token}`
+                    }
+                });
+
+                const json = await res.json();
+                if (!res.ok) {
+                    handleApiError(res, json, 'تعذر جلب تفاصيل الطلب');
+                    return;
+                }
+
+                const order = json.order;
+
+                // 1. العنوان وتاريخ الإنشاء
+                document.getElementById('orderDetailsId').innerText = `طلب #${order.id}`;
+                document.getElementById('orderDetailsDate').innerText = order.created_at ? new Date(order.created_at).toLocaleString('ar-SY', { dateStyle: 'full', timeStyle: 'short' }) : '-';
+
+                // 2. شارة الحالة
+                const statusBadges = {
+                    'pending': 'bg-blue-50 text-blue-700 border-blue-200',
+                    'placed': 'bg-blue-50 text-blue-700 border-blue-200',
+                    'confirmed': 'bg-blue-50 text-blue-700 border-blue-200',
+                    'shipped': 'bg-amber-50 text-amber-700 border-amber-200',
+                    'delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    'cancelled': 'bg-rose-50 text-rose-700 border-rose-200',
+                    'failed': 'bg-rose-50 text-rose-700 border-rose-200',
+                    'rejected': 'bg-rose-50 text-rose-700 border-rose-200'
+                };
+                const statusNames = {
+                    'pending': 'قيد الانتظار',
+                    'placed': 'تم الإرسال',
+                    'confirmed': 'مؤكد',
+                    'shipped': 'قيد الشحن',
+                    'delivered': 'تم التسليم بنجاح',
+                    'cancelled': 'ملغي',
+                    'failed': 'فشل المعالجة',
+                    'rejected': 'مرفوض'
+                };
+
+                const badgeEl = document.getElementById('orderDetailsStatusBadge');
+                badgeEl.className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${statusBadges[order.status] || 'bg-slate-100'}`;
+                badgeEl.innerText = statusNames[order.status] || order.status;
+
+                // 3. مسار معالجة الطلب (Stepper Tracker)
+                renderOrderTracker(order.status);
+
+                // 4. جدول المنتجات
+                const itemsTbody = document.getElementById('orderDetailsItemsList');
+                itemsTbody.innerHTML = '';
+                (order.items || []).forEach(item => {
+                    const tr = document.createElement('tr');
+                    const unitPrice = parseFloat(item.unit_price || 0);
+                    const itemTotal = unitPrice * item.quantity;
+                    tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+                    tr.innerHTML = `
+                        <td class="p-3 font-bold text-slate-800">${item.name}</td>
+                        <td class="p-3 text-center font-mono font-bold text-slate-700">${item.quantity}</td>
+                        <td class="p-3 text-left font-mono text-slate-600">$${unitPrice.toFixed(2)}</td>
+                        <td class="p-3 text-left font-mono font-bold text-slate-900">$${itemTotal.toFixed(2)}</td>
+                    `;
+                    itemsTbody.appendChild(tr);
+                });
+
+                // 5. الملخص المالي
+                const totalFloat = parseFloat(order.total || 0);
+                document.getElementById('orderDetailsSubtotal').innerText = `$${totalFloat.toFixed(2)}`;
+                document.getElementById('orderDetailsGrandTotal').innerText = `$${totalFloat.toFixed(2)}`;
+
+                // 6. لوحة أزرار المشرف لتغيير الحالة
+                const adminSection = document.getElementById('orderDetailsAdminActions');
+                const adminButtons = document.getElementById('orderDetailsAdminButtons');
+                adminButtons.innerHTML = '';
+
+                if (sessionUser.role === 'admin') {
+                    adminSection.classList.remove('hidden');
+                    if (order.status === 'placed' || order.status === 'confirmed') {
+                        adminButtons.innerHTML = `
+                            <button onclick="requestStatusAndUpdateView(${order.id}, 'shipped')" class="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition shadow-xs">
+                                شحن هذا الطلب
+                            </button>
+                            <button onclick="requestStatusAndUpdateView(${order.id}, 'cancelled')" class="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition shadow-xs">
+                                إلغاء الطلب
+                            </button>
+                        `;
+                    } else if (order.status === 'shipped') {
+                        adminButtons.innerHTML = `
+                            <button onclick="requestStatusAndUpdateView(${order.id}, 'delivered')" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-xs">
+                                تأكيد تسليم الشحنة
+                            </button>
+                        `;
+                    } else {
+                        adminButtons.innerHTML = `<span class="text-slate-500 text-xs">اكتملت معالجة هذا الطلب (${statusNames[order.status]}).</span>`;
+                    }
+                } else {
+                    adminSection.classList.add('hidden');
+                }
+
+                // فتح النافذة
+                document.getElementById('modalOrderDetails').classList.add('active');
+            } catch (err) {
+                console.error(err);
+                showToastNotification('تعذر الاتصال بالخادم لعرض تفاصيل الطلب', 'error');
+            }
+        }
+
+        function closeOrderDetailsModal() {
+            document.getElementById('modalOrderDetails').classList.remove('active');
+        }
+
+        async function requestStatusAndUpdateView(orderId, newStatus) {
+            await requestOrderStatusUpdate(orderId, newStatus);
+            openOrderDetails(orderId);
+        }
+
+        function renderOrderTracker(status) {
+            const trackerBox = document.getElementById('orderStatusTracker');
+
+            if (status === 'cancelled' || status === 'failed' || status === 'rejected') {
+                let noteTitle = 'تم إلغاء هذا الطلب';
+                let noteDesc = 'تم إلغاء الطلب رسمياً وإعادة الكميات المحجوزة للمخزون.';
+                if (status === 'failed') {
+                    noteTitle = 'تعذر استكمال معالجة الطلب';
+                    noteDesc = 'حدث تعثر أثناء تأكيد المعاملة، وتم إلغاء حجز الكميات تلقائياً.';
+                } else if (status === 'rejected') {
+                    noteTitle = 'تم رفض الطلب';
+                    noteDesc = 'تم رفض الطلب نظراً لعدم توفر الكميات المطلوبة في المخزون.';
+                }
+
+                trackerBox.className = 'p-4 bg-rose-50 rounded-xl border border-rose-200 space-y-2';
+                trackerBox.innerHTML = `
+                    <div class="flex items-center gap-2 text-rose-800 font-bold text-xs">
+                        <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>${noteTitle}</span>
+                    </div>
+                    <p class="text-[11px] text-rose-700 leading-relaxed">${noteDesc}</p>
+                `;
+                return;
+            }
+
+            trackerBox.className = 'p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3';
+            trackerBox.innerHTML = `
+                <div class="text-[11px] font-bold text-slate-500 flex items-center justify-between">
+                    <span>مسار معالجة الطلب:</span>
+                    <span id="orderTrackerCurrentStepText" class="text-blue-700 font-extrabold"></span>
+                </div>
+                <div class="grid grid-cols-4 gap-2 text-center text-[10px] font-semibold relative">
+                    <div id="step-confirmed" class="flex flex-col items-center gap-1.5">
+                        <div class="step-circle w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] bg-slate-200 text-slate-600 transition">1</div>
+                        <span class="text-slate-600">تم التأكيد</span>
+                    </div>
+                    <div id="step-processing" class="flex flex-col items-center gap-1.5">
+                        <div class="step-circle w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] bg-slate-200 text-slate-600 transition">2</div>
+                        <span class="text-slate-600">قيد التجهيز</span>
+                    </div>
+                    <div id="step-shipped" class="flex flex-col items-center gap-1.5">
+                        <div class="step-circle w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] bg-slate-200 text-slate-600 transition">3</div>
+                        <span class="text-slate-600">قيد الشحن</span>
+                    </div>
+                    <div id="step-delivered" class="flex flex-col items-center gap-1.5">
+                        <div class="step-circle w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] bg-slate-200 text-slate-600 transition">4</div>
+                        <span class="text-slate-600">تم التسليم</span>
+                    </div>
+                </div>
+            `;
+
+            let activeIndex = 1;
+            if (status === 'placed' || status === 'pending') {
+                activeIndex = 0;
+                document.getElementById('orderTrackerCurrentStepText').innerText = 'تم استلام الطلب وتأكيده';
+            } else if (status === 'confirmed') {
+                activeIndex = 1;
+                document.getElementById('orderTrackerCurrentStepText').innerText = 'جاري التجهيز والتعبئة';
+            } else if (status === 'shipped') {
+                activeIndex = 2;
+                document.getElementById('orderTrackerCurrentStepText').innerText = 'في الطريق إليك مع شركة الشحن';
+            } else if (status === 'delivered') {
+                activeIndex = 3;
+                document.getElementById('orderTrackerCurrentStepText').innerText = 'تم تسليم الشحنة بنجاح';
+            }
+
+            const stepIds = ['step-confirmed', 'step-processing', 'step-shipped', 'step-delivered'];
+            stepIds.forEach((id, idx) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const circle = el.querySelector('.step-circle');
+                const label = el.querySelector('span');
+                if (idx < activeIndex) {
+                    circle.className = 'step-circle w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] bg-emerald-500 text-white shadow-2xs';
+                    circle.innerText = '✓';
+                    label.className = 'text-emerald-700 font-bold';
+                } else if (idx === activeIndex) {
+                    circle.className = 'step-circle w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] bg-blue-600 text-white ring-4 ring-blue-100 shadow-xs';
+                    circle.innerText = `${idx + 1}`;
+                    label.className = 'text-blue-700 font-black';
+                } else {
+                    circle.className = 'step-circle w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] bg-slate-200 text-slate-400';
+                    circle.innerText = `${idx + 1}`;
+                    label.className = 'text-slate-400';
+                }
+            });
+        }
+
+        function printOrderDetails() {
+            window.print();
+        }
+
+        async function requestOrderStatusUpdate(orderId, newStatus) {
+            try {
+                const res = await fetch(`${API_PREFIX}/orders/${orderId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${sessionUser.token}`
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    showToastNotification(`تم تحديث حالة الطلب #${orderId} بنجاح`, 'success');
+                    loadOrdersData();
+                } else {
+                    handleApiError(res, data, 'تعذر تحديث حالة الطلب');
+                }
+            } catch (err) {
+                showToastNotification('تعذر تحديث الطلب، يرجى إعادة المحاولة', 'error');
+            }
+        }
+
+        // ========================================================
+        // إضافة منتج جديد (المشرف فقط)
+        // ========================================================
+        function openProductModal() {
+            document.getElementById('modalCreateProduct').classList.add('active');
+        }
+
+        function closeProductModal() {
+            document.getElementById('modalCreateProduct').classList.remove('active');
+        }
+
+        async function submitProductForm(e) {
+            e.preventDefault();
+            const body = {
+                name: document.getElementById('formProductName').value,
+                description: document.getElementById('formProductDesc').value,
+                price: parseFloat(document.getElementById('formProductPrice').value),
+                stock: parseInt(document.getElementById('formProductStock').value),
+                category: document.getElementById('formProductCategory').value
+            };
+
+            try {
+                const res = await fetch(`${API_PREFIX}/products`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${sessionUser.token}`
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const json = await res.json();
+                if (res.ok) {
+                    closeProductModal();
+                    showToastNotification('تمت إضافة المنتج بنجاح وتعيين المخزون', 'success');
+                    loadCatalogProducts(currentActiveCategory);
+                } else {
+                    handleApiError(res, json, 'فشلت إضافة المنتج');
+                }
+            } catch (err) {
+                showToastNotification('تعذر حفظ بيانات المنتج، يرجى المحاولة لاحقاً', 'error');
+            }
+        }
+
+        // ========================================================
+        // الإشعارات
+        // ========================================================
+        async function loadNotificationsList() {
+            if (!sessionUser.token) return;
+
+            try {
+                const res = await fetch(`${API_PREFIX}/notifications`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${sessionUser.token}`
+                    }
+                });
+
+                const json = await res.json();
+                if (!res.ok) {
+                    handleApiError(res, json, 'تعذر تحميل الإشعارات');
+                    return;
+                }
+
+                const list = json.data || [];
+                const container = document.getElementById('notificationsContainer');
+                container.innerHTML = '';
+
+                if (list.length === 0) {
+                    container.innerHTML = `
+                        <div class="py-12 text-center text-slate-400 text-xs">
+                            <svg class="w-8 h-8 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                            لا توجد إشعارات مسجلة في حسابك حالياً.
+                        </div>
+                    `;
+                } else {
+                    list.forEach(n => {
+                        const isRead = !!n.read;
+                        let title = 'إشعار جديد';
+                        let desc = n.message || 'لا توجد تفاصيل إضافية.';
+                        let iconSvg = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+
+                        if (n.order_id) {
+                            if (n.status === 'confirmed') {
+                                title = `تم تأكيد طلب الشراء #${n.order_id}`;
+                                desc = `تم تأكيد طلبك بنجاح وهو الآن قيد التجهيز.`;
+                                iconSvg = '<svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+                            } else if (n.status === 'shipped') {
+                                title = `تم شحن الطلب #${n.order_id}`;
+                                desc = `تم تسليم طلبك لشركة الشحن وهو في طريقه إليك.`;
+                                iconSvg = '<svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>';
+                            } else if (n.status === 'delivered') {
+                                title = `تم تسليم الطلب #${n.order_id}`;
+                                desc = `تم تسليم الطلب بنجاح. نتمنى لك تجربة ممتعة!`;
+                                iconSvg = '<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+                            } else if (n.status === 'cancelled') {
+                                title = `تم إلغاء الطلب #${n.order_id}`;
+                                desc = `تم إلغاء الطلب واسترجاع الكميات المخصصة له.`;
+                                iconSvg = '<svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+                            } else if (n.status === 'failed') {
+                                title = `تعذر معالجة الطلب #${n.order_id}`;
+                                desc = `حدث تعثر في استكمال الطلب، وتم إلغاء حجز الكميات تلقائياً.`;
+                                iconSvg = '<svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+                            } else if (n.status === 'rejected') {
+                                title = `تم رفض الطلب #${n.order_id}`;
+                                desc = `تم رفض الطلب نظراً لعدم توفر الكميات المطلوبة في المخزون.`;
+                                iconSvg = '<svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+                            } else {
+                                title = `تحديث بخصوص الطلب #${n.order_id}`;
+                                desc = n.message || `حالة الطلب الحالية: ${n.status}`;
+                            }
+                        }
+
+                        const el = document.createElement('div');
+                        el.className = `p-4 rounded-xl border transition flex items-start justify-between gap-3 ${
+                            isRead ? 'bg-slate-50/70 border-slate-200' : 'bg-white border-blue-200 shadow-xs ring-1 ring-blue-100'
+                        }`;
+                        el.innerHTML = `
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                                    isRead ? 'bg-slate-200 text-slate-500' : 'bg-blue-50 text-blue-600'
+                                }">
+                                    ${iconSvg}
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-xs ${isRead ? 'text-slate-700' : 'text-slate-900'}">${title}</span>
+                                        ${!isRead ? '<span class="w-2 h-2 rounded-full bg-blue-600"></span>' : ''}
+                                    </div>
+                                    <p class="text-xs text-slate-600 mt-1 leading-relaxed">${desc}</p>
+                                    ${n.order_id ? `
+                                        <button onclick="openOrderDetails(${n.order_id})" class="text-[11px] font-bold text-blue-600 hover:text-blue-800 hover:underline mt-1.5 inline-flex items-center gap-1">
+                                            <span>عرض تفاصيل الطلب #${n.order_id}</span>
+                                            <span class="text-xs">←</span>
+                                        </button>
+                                    ` : ''}
+                                    <span class="text-[10px] text-slate-400 mt-1.5 block font-mono font-normal">
+                                        ${new Date(n.created_at).toLocaleString('ar-SY', { dateStyle: 'medium', timeStyle: 'short' })}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="shrink-0 pt-0.5">
+                                ${!isRead ? `
+                                    <button onclick="markNotificationRead('${n.id}')" class="px-2.5 py-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition">
+                                        تحديد كمقروء
+                                    </button>
+                                ` : `
+                                    <span class="text-[10px] text-slate-400 font-semibold">مقروء</span>
+                                `}
+                            </div>
+                        `;
+                        container.appendChild(el);
+                    });
+                }
+
+                const unreadCount = json.meta?.unread ?? list.filter(n => !n.read).length;
+                const badge = document.getElementById('notifBadge');
+                if (unreadCount > 0) {
+                    badge.innerText = unreadCount;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function markNotificationRead(id) {
+            try {
+                const res = await fetch(`${API_PREFIX}/notifications/${id}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${sessionUser.token}`
+                    }
+                });
+                const json = await res.json();
+                if (res.ok) {
+                    loadNotificationsList();
+                } else {
+                    handleApiError(res, json, 'تعذر تحديث حالة الإشعار');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function markAllNotificationsRead() {
+            try {
+                const res = await fetch(`${API_PREFIX}/notifications`, {
+                    headers: { 'Accept': 'application/json', 'Authorization': `Bearer ${sessionUser.token}` }
+                });
+                const json = await res.json();
+                const unreadItems = (json.data || []).filter(n => !n.read);
+                await Promise.all(unreadItems.map(n => 
+                    fetch(`${API_PREFIX}/notifications/${n.id}/read`, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'Authorization': `Bearer ${sessionUser.token}` }
+                    })
+                ));
+                showToastNotification('تم تحديد كافة الإشعارات كمقروءة', 'success');
+                loadNotificationsList();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // ========================================================
+        // الملف الشخصي والتنبيهات
+        // ========================================================
+        function openProfileModal() {
+            document.getElementById('modalUserProfile').classList.add('active');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('modalUserProfile').classList.remove('active');
+        }
+
+        function showToastNotification(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const alert = document.getElementById('toastAlert');
+            const msgEl = document.getElementById('toastMessage');
+            const iconEl = document.getElementById('toastIcon');
+
+            msgEl.innerText = msg;
+
+            if (type === 'success') {
+                alert.className = 'pointer-events-auto p-3.5 rounded-xl border shadow-lg flex items-center justify-between text-xs bg-emerald-50 border-emerald-200 text-emerald-950';
+                iconEl.className = 'w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs';
+                iconEl.innerText = '✓';
+            } else if (type === 'error') {
+                alert.className = 'pointer-events-auto p-3.5 rounded-xl border shadow-lg flex items-center justify-between text-xs bg-rose-50 border-rose-200 text-rose-950';
+                iconEl.className = 'w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-xs';
+                iconEl.innerText = '!';
+            } else {
+                alert.className = 'pointer-events-auto p-3.5 rounded-xl border shadow-lg flex items-center justify-between text-xs bg-blue-50 border-blue-200 text-blue-950';
+                iconEl.className = 'w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-xs';
+                iconEl.innerText = 'i';
+            }
+
+            container.classList.remove('opacity-0', '-translate-y-4');
+            container.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                hideToast();
+            }, 3500);
+        }
+
+        function hideToast() {
+            const container = document.getElementById('toastContainer');
+            container.classList.remove('opacity-100', 'translate-y-0');
+            container.classList.add('opacity-0', '-translate-y-4');
+        }
+    </script>
+</body>
 </html>
