@@ -41,7 +41,6 @@ class AppServiceProvider extends ServiceProvider
         // Authorization rule: only admins pass "can:admin"
         Gate::define('admin', fn (User $user) => $user->isAdmin());
 
-        // Rate limits
         RateLimiter::for('api', fn (Request $request) =>
         Limit::perMinute(60)->by($request->user()?->id ?: $request->ip()));
 
