@@ -5,6 +5,7 @@ namespace App\Exceptions;
 use App\Services\Inventory\Exceptions\InsufficientStockException;
 use App\Services\Inventory\Exceptions\InventoryUnavailableException;
 use App\Services\Inventory\Exceptions\ReservationConflictException;
+use App\Services\Orders\Exceptions\InvalidStatusTransitionException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,7 @@ class ApiExceptionRenderer
             $e instanceof AuthenticationException => $this->error(401, 'UNAUTHENTICATED', 'Authentication is required.'),
             $e instanceof InsufficientStockException => $this->error(409, 'INSUFFICIENT_STOCK', $e->getMessage()),
             $e instanceof ReservationConflictException => $this->error(409, 'RESERVATION_CONFLICT', $e->getMessage()),
+            $e instanceof InvalidStatusTransitionException => $this->error(409, 'INVALID_STATUS_TRANSITION', $e->getMessage()),
             $e instanceof InventoryUnavailableException => $this->error(503, 'INVENTORY_UNAVAILABLE', 'Inventory service is temporarily unavailable. Please try again.'),
             $e instanceof HttpExceptionInterface => $this->fromHttpException($e),
             default => $this->error(500, 'INTERNAL_ERROR', config('app.debug') ? $e->getMessage() : 'Something went wrong.'),

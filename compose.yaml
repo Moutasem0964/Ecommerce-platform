@@ -21,6 +21,36 @@ services:
         condition: service_healthy
     networks: [backend]
 
+  # ---------- Laravel scheduler (runs scheduled commands, e.g. the saga cleanup) ----------
+  scheduler:
+    build: ./docker/app
+    command: ["php", "artisan", "schedule:work"]
+    user: www-data
+    volumes:
+      - ./app:/var/www/html
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      INVENTORY_GRPC_TARGET: inventory:9090
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks: [backend]
+
+  # ---------- API docs: Swagger UI for docs/openapi.yaml → http://localhost:8081 ----------
+  swagger:
+    image: swaggerapi/swagger-ui:v5.34.1
+    ports:
+      - "${SWAGGER_PORT:-8081}:8080"
+    environment:
+      SWAGGER_JSON: /docs/openapi.yaml
+    volumes:
+      - ./docs:/docs:ro
+
   #  Web server in front of Laravel 
   web:
     image: nginx:1.28-alpine
