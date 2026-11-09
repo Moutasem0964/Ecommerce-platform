@@ -62,6 +62,10 @@ docker compose exec -T app php artisan migrate --force
 if ($LASTEXITCODE -ne 0) { Write-Host "Migrations failed." -ForegroundColor Red; exit 1 }
 
 # 5. Smoke tests
+Step "Architecture tests"
+docker compose exec -T app vendor/bin/phpunit --testsuite Architecture
+if ($LASTEXITCODE -ne 0) { Write-Host "Module boundaries are broken." -ForegroundColor Red; exit 1 }
+
 Step "Smoke tests"
 Expect "GET /ping"                        (Call GET "$base/ping").Code 200
 Expect "GET /products"                    (Call GET "$base/products").Code 200
@@ -77,6 +81,32 @@ if ($login.Code -eq 200) {
     Expect "GET /orders"                        (Call GET "$base/orders" $auth).Code 200
     Expect "GET /notifications"                 (Call GET "$base/notifications" $auth).Code 200
     Expect "POST /products as customer -> 403"  (Call POST "$base/products" $auth '{}').Code 403
+
+    $adminLogin = Call POST "$base/auth/login" @{ Accept = "application/json" } '{"email":"admin@test.com","password":"secret123"}'
+    Expect "POST /auth/login (admin)" $adminLogin.Code 200
+    $adminAuth = @{ Authorization = "Bearer " + ($adminLogin.Body | ConvertFrom-Json).access_token; Accept = "application/json" }
+
+    $created = Call POST "$base/products" $adminAuth '{"name":"CI Test Mug","price":"9.99","category":"ci","stock":5}'
+    Expect "POST /products as admin -> 201" $created.Code 201
+
+    if ($created.Code -eq 201) {
+        $productId = ($created.Body | ConvertFrom-Json).product.id
+        $orderBody = @{ items = @(@{ product_id = $productId; quantity = 1 }) } | ConvertTo-Json -Depth 5 -Compress
+        $placed = Call POST "$base/orders" $auth $orderBody
+        Expect "POST /orders -> 201" $placed.Code 201
+
+        if ($placed.Code -eq 201) {
+            $order = ($placed.Body | ConvertFrom-Json).order
+            Expect "Order is confirmed"               $order.status "confirmed"
+            Expect "Item name snapshot on the order"  $order.items[0].name "CI Test Mug"
+
+            $latest = ((Call GET "$base/notifications" $auth).Body | ConvertFrom-Json).data[0]
+            Expect "Notification created by event listener" $latest.order_id $order.id
+        }
+
+        $badBody = @{ items = @(@{ product_id = 999999; quantity = 1 }) } | ConvertTo-Json -Depth 5 -Compress
+        Expect "POST /orders unknown product -> 422" (Call POST "$base/orders" $auth $badBody).Code 422
+    }
 }
 
 $ping = Call GET "$base/ping"
