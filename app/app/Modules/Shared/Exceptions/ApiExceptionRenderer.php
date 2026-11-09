@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Modules\Shared\Exceptions;
+
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Throwable;
+
+/**
+ * Turns any exception thrown during an API request into the same JSON shape:
+ *
+ *   { "error": { "code": "NOT_FOUND", "message": "...", "details": { ... } } }
+ *
+ * Returns null for non-API requests, so web pages keep Laravel's normal error pages.
+ */
+class ApiExceptionRenderer
+{
+    public function __invoke(Throwable $e, Request $request): ?JsonResponse
+    {
+        if (! $request->is('api/*')) {
+            return null;
+        }
+
+        return match (true) {
+            $e instanceof ValidationException => $this->error(422, 'VALIDATION_FAILED', 'The given data was invalid.', $e->errors()),
+            $e instanceof AuthenticationException => $this->error(401, 'UNAUTHENTICATED', 'Authentication is required.'),
+            $e instanceof DomainException => $this->error($e->status(), $e->errorCode(), $e->publicMessage()),
+            $e instanceof HttpExceptionInterface => $this->fromHttpException($e),
+            default => $this->error(500, 'INTERNAL_ERROR', config('app.debug') ? $e->getMessage() : 'Something went wrong.'),
+        };
+    }
+
+    private function fromHttpException(HttpExceptionInterface $e): JsonResponse
+    {
+        $status = $e->getStatusCode();
+
+        [$code, $message] = match ($status) {
+            403 => ['FORBIDDEN', 'You are not allowed to perform this action.'],
+            404 => ['NOT_FOUND', 'The requested resource was not found.'],
+            405 => ['METHOD_NOT_ALLOWED', 'This HTTP method is not allowed here.'],
+            429 => ['TOO_MANY_REQUESTS', 'Too many requests. Please slow down.'],
+            default => ['HTTP_ERROR', $e->getMessage() ?: 'Request failed.'],
+        };
+
+        return $this->error($status, $code, $message, headers: $e->getHeaders());
+    }
+
+    private function error(int $status, string $code, string $message, ?array $details = null, array $headers = []): JsonResponse
+    {
+        $body = ['code' => $code, 'message' => $message];
+        if ($details !== null) {
+            $body['details'] = $details;
+        }
+
+        return response()->json(['error' => $body], $status, $headers);
+    }
+}

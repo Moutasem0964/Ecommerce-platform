@@ -3,8 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use App\Exceptions\ApiExceptionRenderer;
-use App\Http\Middleware\SecurityHeaders;
+use App\Modules\Shared\Exceptions\ApiExceptionRenderer;
+use App\Modules\Shared\Http\Middleware\SecurityHeaders;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
