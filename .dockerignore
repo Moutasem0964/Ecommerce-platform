@@ -6,3 +6,13 @@ app/vendor
 app/node_modules
 app/storage/logs
 inventory/target
+
+app/.env
+app/storage/keys/*.pem
+app/storage/framework/cache/data
+app/storage/framework/sessions/*
+app/storage/framework/views/*
+app/storage/app/public/*
+app/public/storage
+app/bootstrap/cache/*.php
+_shipments

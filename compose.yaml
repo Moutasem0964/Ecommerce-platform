@@ -4,10 +4,13 @@ name: ecommerce-platform
 services:
   #  Laravel (PHP-FPM) 
   app:
-    build: ./docker/app
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    env_file: ./app/.env            # runtime config & secrets (not baked into the image)
     volumes:
-      - ./app:/var/www/html
-      - composer-cache:/root/.composer/cache
+      - ./app/storage/keys:/var/www/html/storage/keys        # JWT keys (secrets)
+      - app-uploads:/var/www/html/storage/app/public         # uploaded product images survive rebuilds
     environment:
       DB_CONNECTION: mysql
       DB_HOST: mysql
@@ -21,13 +24,14 @@ services:
         condition: service_healthy
     networks: [backend]
 
-  # ---------- Laravel scheduler (runs scheduled commands, e.g. the saga cleanup) ----------
+  # Laravel scheduler (runs scheduled commands, e.g. the saga cleanup)
   scheduler:
-    build: ./docker/app
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
     command: ["php", "artisan", "schedule:work"]
     user: www-data
-    volumes:
-      - ./app:/var/www/html
+    env_file: ./app/.env
     environment:
       DB_CONNECTION: mysql
       DB_HOST: mysql
@@ -41,7 +45,7 @@ services:
         condition: service_healthy
     networks: [backend]
 
-  # ---------- API docs: Swagger UI for docs/openapi.yaml → http://localhost:8081 ----------
+  # API docs: Swagger UI for docs/openapi.yaml → http://localhost:8081
   swagger:
     image: swaggerapi/swagger-ui:v5.34.1
     ports:
@@ -57,7 +61,8 @@ services:
     ports:
       - "${APP_PORT:-8000}:80"
     volumes:
-      - ./app:/var/www/html:ro
+      - ./app/public:/var/www/html/public:ro                  # static files (index.php itself runs in the app image)
+      - app-uploads:/var/www/html/storage/app/public:ro      # serves /storage/... product images
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on: [app]
     networks: [backend]
@@ -112,7 +117,7 @@ services:
       retries: 20
     networks: [backend]
 
-  # ---------- Contract tooling (not started by "up"; run on demand) ----------
+  # Contract tooling (not started by "up"; run on demand)
   #   docker compose run --rm buf lint
   #   docker compose run --rm buf generate
   buf:
@@ -125,7 +130,7 @@ services:
 volumes:
   mysql-data:
   postgres-data:
-  composer-cache:
+  app-uploads:
 
 networks:
   backend:
