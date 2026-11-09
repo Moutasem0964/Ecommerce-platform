@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Inventory;
+namespace App\Modules\Inventory\Clients;
 
 use App\Modules\Inventory\Exceptions\InsufficientStockException;
 use App\Modules\Inventory\Exceptions\InventoryUnavailableException;

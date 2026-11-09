@@ -11,4 +11,13 @@ enum OrderStatus: string
     case Shipped = 'shipped';
     case Delivered = 'delivered';
     case Cancelled = 'cancelled';
+
+    public function canTransitionTo(self $to): bool
+    {
+        return in_array($to, match ($this) {
+            self::Confirmed => [self::Shipped, self::Cancelled],
+            self::Shipped => [self::Delivered],
+            default => [],
+        }, true);
+    }
 }

@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->index();
             $table->string('status', 16);
-            $table->decimal('total', 10, 2);
+            $table->decimal('total', 14, 2);
             $table->timestamps();
 
             $table->index(['status', 'created_at']); // cleanup job: "PENDING older than X"
