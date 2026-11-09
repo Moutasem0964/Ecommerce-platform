@@ -94,6 +94,60 @@ class ModuleBoundariesTest extends TestCase
         $this->assertSame([], $violations);
     }
 
+    #[DataProvider('modules')]
+    public function test_controllers_only_handle_http(string $module): void
+    {
+        $forbidden = ['DB::', '::query(', '::create(', '::where(', '::find(', '::firstOrCreate(', 'Hash::', 'Storage::', 'config(', '->notify(', '->notifications(', '->transaction('];
+        $violations = [];
+
+        foreach ($this->phpFiles($this->modulePath($module).'/Http/Controllers') as $file) {
+            $source = file_get_contents($file);
+            foreach ($forbidden as $pattern) {
+                if (str_contains($source, $pattern)) {
+                    $violations[] = $this->relative($file)." uses {$pattern}";
+                }
+            }
+        }
+
+        $this->assertSame([], $violations);
+    }
+
+    #[DataProvider('modules')]
+    public function test_modules_only_touch_their_own_tables(string $module): void
+    {
+        $ownTables = [];
+        foreach ($this->phpFiles($this->modulePath($module).'/Database/Migrations') as $migration) {
+            preg_match_all("/Schema::create\\('(\\w+)'/", file_get_contents($migration), $created);
+            $ownTables = [...$ownTables, ...$created[1]];
+        }
+
+        $patterns = [
+            "/['|](?:exists|unique):(\\w+)/",
+            "/Rule::(?:exists|unique)\\('(\\w+)'/",
+            "/DB::table\\('(\\w+)'/",
+            "/->(?:from|join|leftJoin|rightJoin)\\('(\\w+)'/",
+        ];
+
+        $violations = [];
+        foreach ($this->phpFiles($this->modulePath($module)) as $file) {
+            if (str_contains($file, '/Database/Migrations/')) {
+                continue;
+            }
+
+            $source = file_get_contents($file);
+            foreach ($patterns as $pattern) {
+                preg_match_all($pattern, $source, $matches);
+                foreach (array_unique($matches[1]) as $table) {
+                    if (! in_array($table, $ownTables, true)) {
+                        $violations[] = $this->relative($file)." -> {$table}";
+                    }
+                }
+            }
+        }
+
+        $this->assertSame([], $violations);
+    }
+
     public function test_all_application_code_lives_in_modules(): void
     {
         $outside = [];

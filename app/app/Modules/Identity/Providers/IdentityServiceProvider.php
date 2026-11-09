@@ -18,6 +18,8 @@ class IdentityServiceProvider extends ModuleServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/jwt.php', 'jwt');
+
+        $this->app->singleton(JwtService::class);
     }
 
     public function boot(): void

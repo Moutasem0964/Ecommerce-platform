@@ -2,7 +2,7 @@
 
 namespace App\Modules\Inventory\Providers;
 
-use App\Modules\Inventory\InventoryClient;
+use App\Modules\Inventory\Clients\InventoryClient;
 use Illuminate\Support\ServiceProvider;
 
 class InventoryServiceProvider extends ServiceProvider

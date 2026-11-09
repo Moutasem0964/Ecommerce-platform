@@ -33,6 +33,19 @@ docker info 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) { Write-Host "Docker Desktop is not running." -ForegroundColor Red; exit 1 }
 Write-Host "  ok"
 
+Step "First-run setup"
+if (-not (Test-Path ".env")) { Copy-Item ".env.example" ".env"; Write-Host "  created .env" }
+if (-not (Test-Path "app/.env")) { Copy-Item "app/.env.example" "app/.env"; Write-Host "  created app/.env" }
+$appEnv = Get-Content "app/.env" -Raw
+if ($appEnv -match "(?m)^APP_KEY=[ \t\r]*$") {
+    $bytes = New-Object byte[] 32
+    [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    $appEnv = $appEnv -replace "(?m)^APP_KEY=[ \t\r]*$", ("APP_KEY=base64:" + [Convert]::ToBase64String($bytes))
+    Set-Content "app/.env" $appEnv -NoNewline
+    Write-Host "  generated APP_KEY"
+}
+Write-Host "  ok"
+
 # 2. Build + start (only changed images are rebuilt; unchanged layers come from cache)
 Step "Build and start"
 $sw = [Diagnostics.Stopwatch]::StartNew()
@@ -61,6 +74,11 @@ Step "Migrations"
 docker compose exec -T app php artisan migrate --force
 if ($LASTEXITCODE -ne 0) { Write-Host "Migrations failed." -ForegroundColor Red; exit 1 }
 
+Step "JWT keys and demo users"
+docker compose exec -T -u www-data app php artisan jwt:keys
+docker compose exec -T app php artisan db:seed --force
+if ($LASTEXITCODE -ne 0) { Write-Host "Seeding failed." -ForegroundColor Red; exit 1 }
+
 # 5. Smoke tests
 Step "Architecture tests"
 docker compose exec -T app vendor/bin/phpunit --testsuite Architecture
@@ -71,6 +89,12 @@ Expect "GET /ping"                        (Call GET "$base/ping").Code 200
 Expect "GET /products"                    (Call GET "$base/products").Code 200
 Expect "GET /products/999999 -> 404"      (Call GET "$base/products/999999").Code 404
 Expect "GET /orders without token -> 401" (Call GET "$base/orders").Code 401
+
+$newEmail = "ci" + (Get-Random) + "@test.com"
+$registerBody = @{ name = "CI User"; email = $newEmail; password = "secret123" } | ConvertTo-Json -Compress
+Expect "POST /auth/register -> 201"            (Call POST "$base/auth/register" @{ Accept = "application/json" } $registerBody).Code 201
+$wrongBody = @{ email = $newEmail; password = "wrong-password" } | ConvertTo-Json -Compress
+Expect "POST /auth/login wrong password -> 401" (Call POST "$base/auth/login" @{ Accept = "application/json" } $wrongBody).Code 401
 
 $login = Call POST "$base/auth/login" @{ Accept = "application/json" } '{"email":"sara@test.com","password":"secret123"}'
 Expect "POST /auth/login (sara)" $login.Code 200

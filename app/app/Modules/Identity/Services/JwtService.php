@@ -12,6 +12,10 @@ class JwtService
 {
     private const ALGORITHM = 'RS256';
 
+    private ?string $privateKey = null;
+
+    private ?string $publicKey = null;
+
     /**
      * Creates a signed access token for the user.
      *
@@ -53,11 +57,11 @@ class JwtService
 
     private function privateKey(): string
     {
-        return file_get_contents(config('jwt.private_key_path'));
+        return $this->privateKey ??= file_get_contents(config('jwt.private_key_path'));
     }
 
     private function publicKey(): string
     {
-        return file_get_contents(config('jwt.public_key_path'));
+        return $this->publicKey ??= file_get_contents(config('jwt.public_key_path'));
     }
 }

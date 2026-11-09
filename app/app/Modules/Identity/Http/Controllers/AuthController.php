@@ -2,69 +2,49 @@
 
 namespace App\Modules\Identity\Http\Controllers;
 
-use App\Modules\Identity\Models\User;
-use App\Modules\Identity\Services\JwtService;
+use App\Modules\Identity\Data\AuthSession;
+use App\Modules\Identity\Http\Requests\LoginRequest;
+use App\Modules\Identity\Http\Requests\RegisterRequest;
+use App\Modules\Identity\Http\Resources\UserResource;
+use App\Modules\Identity\Services\AuthService;
 use App\Modules\Shared\Http\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly JwtService $jwt)
+    public function __construct(private readonly AuthService $auth)
     {
     }
 
-    public function register(Request $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'max:72'],
-        ]);
+        $session = $this->auth->register(
+            $request->validated('name'),
+            $request->validated('email'),
+            $request->validated('password'),
+        );
 
-        $user = User::create($data);
-
-        return response()->json([
-            'user' => $this->userPayload($user->fresh()),
-            ...$this->jwt->issue($user->fresh()),
-        ], 201);
+        return $this->sessionResponse($session, 201);
     }
 
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+        $session = $this->auth->login($request->validated('email'), $request->validated('password'));
 
-        $user = User::where('email', $data['email'])->first();
-
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
-            return response()->json(['error' => [
-                'code' => 'INVALID_CREDENTIALS',
-                'message' => 'Email or password is incorrect.',
-            ]], 401);
-        }
-
-        return response()->json([
-            'user' => $this->userPayload($user),
-            ...$this->jwt->issue($user),
-        ]);
+        return $this->sessionResponse($session);
     }
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['user' => $this->userPayload($request->user())]);
+        return response()->json(['user' => (new UserResource($request->user()))->resolve()]);
     }
 
-    private function userPayload(User $user): array
+    private function sessionResponse(AuthSession $session, int $status = 200): JsonResponse
     {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role->value,
-        ];
+        return response()->json([
+            'user' => (new UserResource($session->user))->resolve(),
+            ...$session->token,
+        ], $status);
     }
 }
