@@ -51,7 +51,7 @@ Step "Build and start"
 $sw = [Diagnostics.Stopwatch]::StartNew()
 docker compose build app
 if ($LASTEXITCODE -ne 0) { Write-Host "Build failed." -ForegroundColor Red; exit 1 }
-docker compose up -d --build
+docker compose up -d --build --remove-orphans
 if ($LASTEXITCODE -ne 0) { Write-Host "Build failed." -ForegroundColor Red; exit 1 }
 Write-Host ("  done in {0:N0}s" -f $sw.Elapsed.TotalSeconds)
 
@@ -70,6 +70,30 @@ if (-not $ready) {
 Write-Host "  API is up"
 
 # 4. Database migrations
+Step "Read replica"
+function Replica-State { docker compose exec -T mysql-replica bash /scripts/replica-status.sh 2>$null | Out-Host; return $LASTEXITCODE }
+$state = Replica-State
+if ($state -eq 1) {
+    Write-Host "  reconnecting the replica to the primary..."
+    docker compose exec -T mysql-replica bash /scripts/replica-start.sh
+    Start-Sleep -Seconds 2
+    $state = Replica-State
+}
+if ($state -ne 0) {
+    Write-Host "  cloning the primary into the replica (first run only)..."
+    docker compose exec -T mysql-replica bash /scripts/replica-clone.sh
+    docker compose restart mysql-replica 2>&1 | Out-Null
+    for ($i = 0; $i -lt 60; $i++) {
+        Start-Sleep -Seconds 2
+        $out = docker compose exec -T mysql-replica bash /scripts/replica-status.sh 2>$null | Out-String
+        if ($out -match "not replicating") { break }
+    }
+    docker compose exec -T mysql-replica bash /scripts/replica-start.sh
+    Start-Sleep -Seconds 2
+    $state = Replica-State
+}
+if ($state -ne 0) { Write-Host "Read replica is not replicating." -ForegroundColor Red; exit 1 }
+
 Step "Migrations"
 docker compose exec -T app php artisan migrate --force
 if ($LASTEXITCODE -ne 0) { Write-Host "Migrations failed." -ForegroundColor Red; exit 1 }
@@ -83,6 +107,16 @@ if ($LASTEXITCODE -ne 0) { Write-Host "Seeding failed." -ForegroundColor Red; ex
 Step "Architecture tests"
 docker compose exec -T app vendor/bin/phpunit --testsuite Architecture
 if ($LASTEXITCODE -ne 0) { Write-Host "Module boundaries are broken." -ForegroundColor Red; exit 1 }
+
+Step "Replica health monitor"
+$replicaState = ""
+for ($i = 0; $i -lt 20; $i++) {
+    $replicaState = [string](Call GET "$base/ping").Headers["X-Replica"]
+    if ($replicaState -like "healthy*") { break }
+    Start-Sleep -Seconds 1
+}
+Expect "X-Replica is healthy" ($replicaState -like "healthy*") $true
+Write-Host "  X-Replica: $replicaState"
 
 Step "Smoke tests"
 Expect "GET /ping"                        (Call GET "$base/ping").Code 200
@@ -126,7 +160,21 @@ if ($login.Code -eq 200) {
 
             $latest = ((Call GET "$base/notifications" $auth).Body | ConvertFrom-Json).data[0]
             Expect "Notification created by event listener" $latest.order_id $order.id
+            $mine = ((Call GET "$base/orders" $auth).Body | ConvertFrom-Json).data[0]
+            Expect "Read-your-writes: new order listed"    $mine.id $order.id
         }
+
+        $first = Call GET "$base/products/$productId"
+        Expect "GET /products/{id} warms the cache"   $first.Code 200
+        $etag = [string]$first.Headers["ETag"]
+        Expect "ETag header present"                  ($etag -ne "") $true
+        Expect "Same ETag -> 304 Not Modified"        (Call GET "$base/products/$productId" @{ Accept = "application/json"; "If-None-Match" = $etag }).Code 304
+        Expect "PATCH /products/{id} as customer -> 403" (Call PATCH "$base/products/$productId" $auth '{"name":"Hacked"}').Code 403
+        $renamed = Call PATCH "$base/products/$productId" $adminAuth '{"name":"CI Test Mug Renamed"}'
+        Expect "PATCH /products/{id} as admin -> 200"  $renamed.Code 200
+        $afterEdit = Call GET "$base/products/$productId"
+        Expect "Edited product shows immediately"     (($afterEdit.Body | ConvertFrom-Json).product.name) "CI Test Mug Renamed"
+        Expect "Old ETag after edit -> 200"           (Call GET "$base/products/$productId" @{ Accept = "application/json"; "If-None-Match" = $etag }).Code 200
 
         $badBody = @{ items = @(@{ product_id = 999999; quantity = 1 }) } | ConvertTo-Json -Depth 5 -Compress
         Expect "POST /orders unknown product -> 422" (Call POST "$base/orders" $auth $badBody).Code 422

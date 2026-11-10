@@ -26,7 +26,7 @@ class AuthService
 
     public function login(string $email, string $password): AuthSession
     {
-        $user = User::where('email', $email)->first();
+        $user = User::query()->useWritePdo()->where('email', $email)->first();
 
         if (! $user || ! Hash::check($password, $user->password)) {
             throw new InvalidCredentialsException();

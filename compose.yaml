@@ -19,8 +19,13 @@ services:
       DB_USERNAME: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}
       INVENTORY_GRPC_TARGET: inventory:9090
+      REDIS_HOST: redis
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mysql-replica:
         condition: service_healthy
     networks: [backend]
 
@@ -40,8 +45,37 @@ services:
       DB_USERNAME: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}
       INVENTORY_GRPC_TARGET: inventory:9090
+      REDIS_HOST: redis
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mysql-replica:
+        condition: service_healthy
+    networks: [backend]
+
+  health-monitor:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    command: ["php", "artisan", "health:monitor"]
+    user: www-data
+    restart: unless-stopped
+    env_file: ./app/.env
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      INVENTORY_GRPC_TARGET: inventory:9090
+      REDIS_HOST: redis
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks: [backend]
 
@@ -84,6 +118,7 @@ services:
   #  Databases 
   mysql:
     image: mysql:8.4
+    command: ["--server-id=1", "--gtid-mode=ON", "--enforce-gtid-consistency=ON"]
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
@@ -98,6 +133,28 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    networks: [backend]
+
+  mysql-replica:
+    image: mysql:8.4
+    hostname: mysql-replica
+    command: ["--server-id=2", "--gtid-mode=ON", "--enforce-gtid-consistency=ON", "--relay-log=replica-relay-bin"]
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "${MYSQL_REPLICA_PORT:-23306}:3306"
+    volumes:
+      - mysql-replica-data:/var/lib/mysql
+      - ./docker/mysql:/scripts:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks: [backend]
 
   postgres:
@@ -117,6 +174,16 @@ services:
       retries: 20
     networks: [backend]
 
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [backend]
+
   # Contract tooling (not started by "up"; run on demand)
   #   docker compose run --rm buf lint
   #   docker compose run --rm buf generate
@@ -130,6 +197,7 @@ services:
 volumes:
   mysql-data:
   postgres-data:
+  mysql-replica-data:
   app-uploads:
 
 networks:
