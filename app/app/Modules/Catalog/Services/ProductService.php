@@ -6,6 +6,8 @@ use App\Modules\Catalog\Data\ProductWithStock;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Clients\InventoryClient;
 use App\Modules\Inventory\Exceptions\InventoryUnavailableException;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -14,27 +16,49 @@ use Throwable;
 
 class ProductService
 {
-    public function __construct(private readonly InventoryClient $inventory)
-    {
+    private const EDITABLE = ['name', 'description', 'price', 'category'];
+
+    public function __construct(
+        private readonly InventoryClient $inventory,
+        private readonly ProductCache $cache,
+    ) {
     }
 
-    public function list(?string $category, int $perPage): LengthAwarePaginator
+    public function list(?string $category, int $perPage, int $page): LengthAwarePaginator
     {
-        $page = Product::query()
-            ->when($category, fn ($q) => $q->where('category', $category))
-            ->orderBy('id')
-            ->paginate($perPage);
+        $result = $this->cache->page($category, $perPage, $page, function () use ($category, $perPage, $page) {
+            $query = $this->query()->when($category, fn ($q) => $q->where('category', $category));
 
-        $stock = $this->stockFor($page->pluck('id')->all());
+            return [
+                'total' => (clone $query)->count(),
+                'rows' => $query->orderBy('id')->forPage($page, $perPage)->get()->map->getAttributes()->all(),
+            ];
+        });
 
-        return $page->through(fn (Product $p) => new ProductWithStock($p, $stock[$p->id] ?? null));
+        $products = Product::hydrate($result['rows']);
+        $stock = $this->stockFor($products->pluck('id')->all());
+
+        return new LengthAwarePaginator(
+            $products->map(fn (Product $p) => new ProductWithStock($p, $stock[$p->id] ?? null)),
+            $result['total'],
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath()],
+        );
     }
 
-    public function details(Product $product): ProductWithStock
+    public function details(int $id): ProductWithStock
     {
-        $stock = $this->stockFor([$product->id]);
+        $attributes = $this->cache->product($id, fn () => $this->query()->find($id)?->getAttributes());
 
-        return new ProductWithStock($product, $stock[$product->id] ?? null);
+        if ($attributes === null) {
+            throw (new ModelNotFoundException())->setModel(Product::class, [$id]);
+        }
+
+        $product = Product::hydrate([$attributes])->first();
+        $stock = $this->stockFor([$id]);
+
+        return new ProductWithStock($product, $stock[$id] ?? null);
     }
 
     public function create(array $data, ?UploadedFile $image): ProductWithStock
@@ -44,10 +68,7 @@ class ProductService
         try {
             $product = DB::transaction(function () use ($data, $imagePath) {
                 $product = Product::create([
-                    'name' => $data['name'],
-                    'description' => $data['description'] ?? null,
-                    'price' => $data['price'],
-                    'category' => $data['category'],
+                    ...array_intersect_key($data, array_flip(self::EDITABLE)),
                     'image_path' => $imagePath,
                 ]);
 
@@ -62,7 +83,55 @@ class ProductService
             throw $e;
         }
 
+        $this->cache->invalidateLists();
+
         return new ProductWithStock($product, $data['stock']);
+    }
+
+    public function update(Product $product, array $data, ?UploadedFile $image): ProductWithStock
+    {
+        $newImagePath = $image?->store('products', 'public');
+        $oldImagePath = $product->image_path;
+
+        try {
+            DB::transaction(function () use ($product, $data, $newImagePath) {
+                $product->fill(array_intersect_key($data, array_flip(self::EDITABLE)));
+                if ($newImagePath) {
+                    $product->image_path = $newImagePath;
+                }
+                $product->save();
+
+                if (array_key_exists('stock', $data)) {
+                    $this->inventory->setStock($product->id, $data['stock']);
+                }
+            });
+        } catch (Throwable $e) {
+            if ($newImagePath) {
+                Storage::disk('public')->delete($newImagePath);
+            }
+            throw $e;
+        }
+
+        if ($newImagePath && $oldImagePath) {
+            Storage::disk('public')->delete($oldImagePath);
+        }
+
+        $this->cache->forgetProduct($product->id);
+        $this->cache->invalidateLists();
+
+        $stock = array_key_exists('stock', $data) ? $data['stock'] : ($this->stockFor([$product->id])[$product->id] ?? null);
+
+        return new ProductWithStock($product, $stock);
+    }
+
+    public function cacheStatus(): string
+    {
+        return $this->cache->lastStatus();
+    }
+
+    private function query(): Builder
+    {
+        return $this->cache->enabled() ? Product::query()->useWritePdo() : Product::query();
     }
 
     private function stockFor(array $productIds): array

@@ -8,11 +8,14 @@ Spring Boot inventory service that talk over gRPC, each with its own database, a
 ## Architecture
 
 ```
-  Browser ──HTTP :8000──► web (nginx) ──FastCGI──► app (Laravel, PHP-FPM) ──► mysql
-                                                        │
-                                                        │ gRPC (internal only)
-                                                        ▼
-                                                  inventory (Spring Boot) ──► postgres
+                                                         writes ┌──► mysql (primary)
+                                                                │       │ GTID replication
+  Browser ──HTTP :8000──► web (nginx) ──FastCGI──► app (Laravel) ┤       ▼
+                                                    │    │       └──► mysql-replica (reads)
+                                                    │    └──► redis (cache, rate limits)
+                                                    │ gRPC (internal only)
+                                                    ▼
+                                              inventory (Spring Boot) ──► postgres
 ```
 
 | Service     | What it is                          | Reachable from your laptop |
@@ -22,7 +25,10 @@ Spring Boot inventory service that talk over gRPC, each with its own database, a
 | `inventory` | Spring Boot 4.1, Java 21            | no (internal only)         |
 | `mysql`     | MySQL 8.4 — main app data           | `localhost:13306`          |
 | `postgres`  | PostgreSQL 17 — inventory data      | `localhost:5433`           |
+| `mysql-replica` | MySQL 8.4 read replica          | `localhost:23306`          |
+| `redis`     | Redis 7.4 — cache and rate limits   | no                         |
 | `scheduler` | Laravel scheduler (saga cleanup)    | no                         |
+| `health-monitor` | Replica lag + Redis watchdog   | no                         |
 | `swagger`   | Swagger UI for the API docs         | `http://localhost:8081`    |
 
 ## Repository layout
@@ -31,7 +37,8 @@ Spring Boot inventory service that talk over gRPC, each with its own database, a
 app/          Laravel main application
 inventory/    Spring Boot inventory service
 proto/        gRPC contract shared by both services
-docker/       Dockerfiles and nginx config
+docker/       Dockerfiles, nginx config, replica scripts
+k6/           Load tests, results and the before/after compare
 compose.yaml  Starts the whole platform
 .env.example  Ports and database credentials for compose
 ```
@@ -99,12 +106,96 @@ The Laravel app is a **modular monolith**: `app/app/Modules/{Shared, Identity, I
 - Only `Inventory` talks gRPC to the Spring Boot service.
 - `app/tests/Architecture` enforces all of this and runs in `ci.ps1`.
 
+## Performance and caching (R3)
+
+### What is in place
+
+| Layer | What it does | Where |
+|---|---|---|
+| Redis cache | Product details and product list pages, TTL 10 min. Stock, order prices and per-user data are never cached. | `Catalog/Services/ProductCache` |
+| Invalidation | After a product write commits: delete `catalog:product:{id}` and bump `catalog:list-version` (all list keys contain the version, old ones expire by TTL). | `ProductService::create/update` |
+| ETag | `ETag` on product reads + `Cache-Control: no-cache`; same `If-None-Match` → `304`, no body. | `Shared/Http/Middleware/ETag` |
+| Rate limiter on Redis | `INCR` instead of a MySQL transaction + row lock (was 78% of DB time in the baseline). | `CACHE_STORE` |
+| Read replica | Reads go to `mysql-replica`, writes to `mysql`. | `config/database.php` |
+| Read-your-writes | After a user's write, that user's reads go to the primary for 5 s. | `Shared/Http/Middleware/ReadYourWrites` |
+| Replica health | `health-monitor` writes a heartbeat to the primary every second and reads it from the replica. Lag over 2 s, replica down or status unknown → all reads go to the primary. | `Shared/Services/ReplicaHealth` |
+| Redis failure | Cache store `failover` = Redis, else per-request memory, with a 5 s circuit breaker. The site stays up (slower); rate limiting fails open; replica status becomes unknown → primary. After Redis comes back (and on monitor start) the cache is flushed twice, so writes made during the outage are never hidden by old entries. | `Shared/Cache`, `Shared/Services/CacheRecovery` |
+| Login limit in nginx | 30 attempts per minute per IP on `/api/v1/auth/login`, independent of Redis and PHP. | `docker/nginx/default.conf` |
+| Indexes | Covering index for a user's orders (`orders.user_id`); category index for filtered lists. | migrations |
+
+### Diagnostic headers (add them as columns in DevTools → Network)
+
+| Header | Values |
+|---|---|
+| `X-Cache` | `HIT` (Redis), `MISS` (loaded from DB and cached), `BYPASS` (cache off) |
+| `X-Read-From` | Measured per request: `none`, `primary`, `replica`, `primary+replica` |
+| `X-Replica` | `healthy (lag)`, `lagging (lag)`, `down`, `unknown`, `disabled` |
+| `ETag` | Body hash; reload with the same value → `304` |
+
+### Switches (`app/.env`)
+
+| Variable | Before | After |
+|---|---|---|
+| `CACHE_STORE` | `database` | `failover` |
+| `CATALOG_CACHE_ENABLED` | `false` | `true` |
+| `HTTP_ETAG_ENABLED` | `false` | `true` |
+| `DB_READ_HOST` | `mysql` | `mysql-replica` |
+
+Also: `CATALOG_CACHE_TTL` (600), `READ_YOUR_WRITES_SECONDS` (5), `REPLICA_MAX_LAG_SECONDS` (2),
+`CACHE_BREAKER_SECONDS` (5). Apply a change with:
+
+```powershell
+docker compose up -d --force-recreate app scheduler health-monitor
+```
+
+### Load test (k6) before / after
+
+All k6 traffic comes from one IP, so set `API_RATE_LIMIT=1000000` in `app/.env` first (back to `60` afterwards).
+The test data (5,000 users, 10,000 products, 200,000 orders) is created with
+`docker compose exec app php artisan db:seed --class=LoadTestSeeder --force`.
+
+```powershell
+# "before" switches, recreate, then:
+.\k6\run-load.ps1 -Label before -Quick       # 1 minute at 50 virtual users
+# "after" switches, recreate, then (run twice, the first warms the cache):
+.\k6\run-load.ps1 -Label after -Quick
+.\k6\compare.ps1 -Before before -After after
+```
+
+Without `-Quick` the test ramps 20 → 50 users over 3.5 minutes. Results are saved in `k6/results/<label>.json`.
+
+Measured on one laptop (ms, 1 minute at 50 users, warm):
+
+| endpoint | p50 | p95 | p99 |
+|---|---|---|---|
+| products page | 49.3 → 10.3 | 207.0 → 22.5 | 348.2 → 53.8 |
+| products by category | 44.0 → 10.3 | 200.9 → 22.5 | 355.0 → 48.6 |
+| product details | 42.4 → 10.2 | 194.6 → 21.3 | 328.2 → 44.6 |
+| my orders | 53.7 → 18.7 | 207.7 → 38.2 | 334.3 → 70.7 |
+| **all** | **46.7 → 10.7** | **204.7 → 26.5** | **343.8 → 58.2** |
+
+Throughput 78 → 95 req/s. k6 here is a closed model (each user waits for the answer, then sleeps),
+so ~95 req/s is the most 50 users can ask for: before, the server could not keep up; after, it can.
+
+### Useful commands during a demo
+
+| Task | Command |
+|---|---|
+| Flush the cache | `docker compose exec redis redis-cli FLUSHALL` |
+| Look at cache keys | `docker compose exec redis redis-cli`, then `SELECT 1` and `KEYS *` |
+| MySQL shell (primary) | `docker compose exec mysql sh -c 'mysql -uroot -p$MYSQL_ROOT_PASSWORD'`, then `USE ecommerce;` |
+| Make the replica lag | on `mysql-replica`: `STOP REPLICA SQL_THREAD;` … `START REPLICA SQL_THREAD;` |
+| Hide / show an index | `ALTER TABLE orders ALTER INDEX orders_user_id_index INVISIBLE;` (`VISIBLE` to restore) |
+| Stop Redis / the replica | `docker compose stop redis` / `docker compose stop mysql-replica` (`start` to restore) |
+| Cut Redis off the network | `docker network disconnect ecommerce-platform_backend ecommerce-platform-redis-1`, restore with `docker network connect --alias redis ecommerce-platform_backend ecommerce-platform-redis-1` |
+| Monitor log | `docker compose logs health-monitor --tail 20` |
+
 ## Connecting a database tool (DBeaver, IntelliJ, TablePlus)
 
 | | MySQL (app) | PostgreSQL (inventory) |
 |---|---|---|
 | Host | `localhost` | `localhost` |
-| Port | `13306` | `5433` |
+| Port | `13306` (replica `23306`) | `5433` |
 | Database | `ecommerce` | `inventory` |
 | User / password | from your `.env` | from your `.env` |
 

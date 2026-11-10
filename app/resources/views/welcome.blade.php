@@ -140,10 +140,18 @@
                 <div class="flex items-center gap-1.5 flex-wrap text-xs">
                     <span class="text-slate-400 font-semibold ml-2">التصنيف:</span>
                     <button onclick="filterByCategory('', this)" class="category-chip active px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">الكل</button>
-                    <button onclick="filterByCategory('إضاءة', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">إضاءة</button>
-                    <button onclick="filterByCategory('إلكترونيات', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">إلكترونيات</button>
-                    <button onclick="filterByCategory('أثاث', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">أثاث</button>
-                    <button onclick="filterByCategory('منزل', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">منزل</button>
+                    <button onclick="filterByCategory('kitchen', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">مطبخ</button>
+                    <button onclick="filterByCategory('electronics', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">إلكترونيات</button>
+                    <button onclick="filterByCategory('books', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">كتب</button>
+                    <button onclick="filterByCategory('toys', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">ألعاب</button>
+                    <button onclick="filterByCategory('garden', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">حديقة</button>
+                    <button onclick="filterByCategory('sports', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">رياضة</button>
+                    <button onclick="filterByCategory('beauty', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">تجميل</button>
+                    <button onclick="filterByCategory('office', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">مكتب</button>
+                    <button onclick="filterByCategory('pets', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">حيوانات أليفة</button>
+                    <button onclick="filterByCategory('automotive', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">سيارات</button>
+                    <button onclick="filterByCategory('music', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">موسيقى</button>
+                    <button onclick="filterByCategory('clothing', this)" class="category-chip bg-slate-50 text-slate-700 hover:bg-slate-100 px-3.5 py-1.5 rounded-lg border border-slate-200 font-bold transition">ملابس</button>
                 </div>
 
                 <!-- زر إضافة منتج جديد (يظهر فقط عند تسجيل الدخول بصلاحية مشرف) -->
@@ -339,10 +347,11 @@
     <div id="modalCreateProduct" class="app-modal fixed inset-0 bg-black/40 z-50 items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 border border-slate-200 shadow-2xl">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h4 class="font-extrabold text-sm text-slate-900">إضافة منتج جديد</h4>
+                <h4 id="productModalTitle" class="font-extrabold text-sm text-slate-900">إضافة منتج جديد</h4>
                 <button onclick="closeProductModal()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
             </div>
-            <form onsubmit="submitProductForm(event)" class="mt-4 space-y-3.5 text-xs">
+            <form id="productForm" onsubmit="submitProductForm(event)" class="mt-4 space-y-3.5 text-xs">
+                <input type="hidden" id="formProductId" value="">
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">اسم المنتج</label>
                     <input type="text" id="formProductName" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
@@ -364,14 +373,22 @@
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">التصنيف</label>
                     <select id="formProductCategory" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
-                        <option value="إضاءة">إضاءة</option>
-                        <option value="إلكترونيات">إلكترونيات</option>
-                        <option value="أثاث">أثاث</option>
-                        <option value="منزل">منزل</option>
+                        <option value="kitchen">مطبخ</option>
+                        <option value="electronics">إلكترونيات</option>
+                        <option value="books">كتب</option>
+                        <option value="toys">ألعاب</option>
+                        <option value="garden">حديقة</option>
+                        <option value="sports">رياضة</option>
+                        <option value="beauty">تجميل</option>
+                        <option value="office">مكتب</option>
+                        <option value="pets">حيوانات أليفة</option>
+                        <option value="automotive">سيارات</option>
+                        <option value="music">موسيقى</option>
+                        <option value="clothing">ملابس</option>
                     </select>
                 </div>
                 <div class="pt-3 flex gap-2">
-                    <button type="submit" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition shadow-xs">حفظ المنتج</button>
+                    <button type="submit" id="productModalSubmit" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition shadow-xs">حفظ المنتج</button>
                     <button type="button" onclick="closeProductModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold">إلغاء</button>
                 </div>
             </form>
@@ -539,6 +556,7 @@
     <!-- منطق العمل والاتصال بخدمات المتجر -->
     <script>
         const API_PREFIX = '/api/v1';
+        const CATEGORY_LABELS = { kitchen: 'مطبخ', electronics: 'إلكترونيات', books: 'كتب', toys: 'ألعاب', garden: 'حديقة', sports: 'رياضة', beauty: 'تجميل', office: 'مكتب', pets: 'حيوانات أليفة', automotive: 'سيارات', music: 'موسيقى', clothing: 'ملابس' };
         
         let sessionUser = {
             token: '',
@@ -554,7 +572,7 @@
 
         // التهيئة عند تحميل الصفحة
         document.addEventListener('DOMContentLoaded', async () => {
-            switchTab('catalog');
+            switchTab('catalog', false);
 
             const cachedToken = localStorage.getItem('store_token');
             const cachedEmail = localStorage.getItem('store_email');
@@ -579,7 +597,7 @@
         });
 
         // التبديل بين الأقسام
-        function switchTab(tabId) {
+        function switchTab(tabId, reload = true) {
             if (tabId === 'orders' && !sessionUser.token) {
                 showToastNotification('يرجى تسجيل الدخول أولاً لاستعراض طلباتك', 'info');
                 openLoginModal();
@@ -607,6 +625,7 @@
                 targetBtn.classList.remove('text-slate-600');
             }
 
+            if (tabId === 'catalog' && reload) loadCatalogProducts(currentActiveCategory);
             if (tabId === 'orders') loadOrdersData();
             if (tabId === 'notifications') loadNotificationsList();
         }
@@ -935,7 +954,7 @@
                             </span>
                         </div>
                         <div class="p-5">
-                            <span class="text-[10px] font-extrabold uppercase text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">${p.category}</span>
+                            <span class="text-[10px] font-extrabold uppercase text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">${CATEGORY_LABELS[p.category] || p.category}</span>
                             <h3 class="font-extrabold text-sm text-slate-900 mt-2 leading-snug">${p.name}</h3>
                             <p class="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">${p.description || 'لا يوجد وصف متاح للمنتج.'}</p>
                         </div>
@@ -957,6 +976,11 @@
                                 <span>شراء سريع</span>
                             </button>
                         </div>
+                        ${sessionUser.role === 'admin' ? `
+                        <button onclick="openEditProduct(${JSON.stringify(p).replace(/"/g, '&quot;')})"
+                            class="py-2 px-3 rounded-lg text-xs font-bold transition bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200">
+                            تعديل المنتج
+                        </button>` : ''}
                     </div>
                 `;
                 container.appendChild(card);
@@ -1094,7 +1118,6 @@
                     showToastNotification(`تم تأكيد الطلب بنجاح برقم #${data.order.id}`, 'success');
                     switchTab('orders');
                     loadCatalogProducts(currentActiveCategory);
-                    openOrderDetails(data.order.id);
                 } else {
                     handleApiError(res, data, 'فشل إتمام طلب الشراء');
                 }
@@ -1157,7 +1180,6 @@
                     showToastNotification(`تم إنشاء الطلب بنجاح برقم #${data.order.id}`, 'success');
                     loadCatalogProducts(currentActiveCategory);
                     switchTab('orders');
-                    openOrderDetails(data.order.id);
                 } else {
                     handleApiError(res, data, 'فشل حجز وتأكيد طلب الشراء');
                 }
@@ -1527,6 +1549,26 @@
         // إضافة منتج جديد (المشرف فقط)
         // ========================================================
         function openProductModal() {
+            document.getElementById('productForm').reset();
+            document.getElementById('formProductId').value = '';
+            document.getElementById('productModalTitle').innerText = 'إضافة منتج جديد';
+            document.getElementById('productModalSubmit').innerText = 'حفظ المنتج';
+            document.getElementById('modalCreateProduct').classList.add('active');
+        }
+
+        function openEditProduct(p) {
+            const select = document.getElementById('formProductCategory');
+            if (![...select.options].some(o => o.value === p.category)) {
+                select.add(new Option(p.category, p.category));
+            }
+            document.getElementById('formProductId').value = p.id;
+            document.getElementById('formProductName').value = p.name;
+            document.getElementById('formProductDesc').value = p.description || '';
+            document.getElementById('formProductPrice').value = p.price;
+            document.getElementById('formProductStock').value = p.stock ?? 0;
+            select.value = p.category;
+            document.getElementById('productModalTitle').innerText = `تعديل المنتج #${p.id}`;
+            document.getElementById('productModalSubmit').innerText = 'حفظ التعديلات';
             document.getElementById('modalCreateProduct').classList.add('active');
         }
 
@@ -1544,9 +1586,11 @@
                 category: document.getElementById('formProductCategory').value
             };
 
+            const productId = document.getElementById('formProductId').value;
+
             try {
-                const res = await fetch(`${API_PREFIX}/products`, {
-                    method: 'POST',
+                const res = await fetch(productId ? `${API_PREFIX}/products/${productId}` : `${API_PREFIX}/products`, {
+                    method: productId ? 'PATCH' : 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
@@ -1558,7 +1602,7 @@
                 const json = await res.json();
                 if (res.ok) {
                     closeProductModal();
-                    showToastNotification('تمت إضافة المنتج بنجاح وتعيين المخزون', 'success');
+                    showToastNotification(productId ? 'تم حفظ التعديلات' : 'تمت إضافة المنتج بنجاح وتعيين المخزون', 'success');
                     loadCatalogProducts(currentActiveCategory);
                 } else {
                     handleApiError(res, json, 'فشلت إضافة المنتج');

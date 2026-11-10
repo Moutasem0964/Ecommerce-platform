@@ -11,6 +11,15 @@ info:
     **Errors** always use one shape: `{"error": {"code": "...", "message": "...", "details": {...}}}`.
 
     **Stock** lives in a separate inventory service (Spring Boot, gRPC); products and orders call it.
+
+    **Caching:** product list and details are cached in Redis (TTL 10 min, invalidated on every
+    product write) and carry an `ETag`; send it back in `If-None-Match` to get `304 Not Modified`.
+    Stock is never cached. Every API response carries diagnostic headers:
+    `X-Read-From` (which database answered), `X-Replica` (read replica health), and on product
+    reads `X-Cache` (HIT / MISS / BYPASS).
+
+    **Rate limits:** API requests per user (or IP) per minute, and `POST /auth/login` is also
+    limited per IP by nginx. Over the limit → `429`.
 servers:
   - url: http://localhost:8000/api/v1
     description: Local (docker compose)
@@ -113,7 +122,36 @@ components:
         total: { type: integer, example: 42 }
         last_page: { type: integer, example: 3 }
 
+  headers:
+    ETag:
+      description: Hash of the response body. Send it back in If-None-Match.
+      schema: { type: string, example: '"8aeee0d1c2…"' }
+    XCache:
+      description: "HIT = served from Redis, MISS = loaded from the database and cached, BYPASS = cache disabled"
+      schema: { type: string, enum: [HIT, MISS, BYPASS] }
+    XReadFrom:
+      description: "Database(s) the request actually read from: none (no query), primary, replica, or primary+replica"
+      schema: { type: string, example: replica }
+    XReplica:
+      description: "Read replica health from the heartbeat monitor: healthy (lag), lagging (lag), down, unknown, disabled. Anything but healthy sends reads to the primary."
+      schema: { type: string, example: healthy (1.0s) }
+
+  parameters:
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: ETag from a previous response. If the data has not changed the server answers 304 with no body.
+      schema: { type: string }
+
   responses:
+    NotModified:
+      description: Not modified since the ETag in If-None-Match (no body)
+      headers:
+        ETag: { $ref: '#/components/headers/ETag' }
+    TooManyRequests:
+      description: Rate limit exceeded (429 TOO_MANY_REQUESTS)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
     Unauthenticated:
       description: Missing, invalid or expired token
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
@@ -192,9 +230,15 @@ paths:
         - { name: category, in: query, schema: { type: string }, example: lighting }
         - { name: page, in: query, schema: { type: integer, minimum: 1 } }
         - { name: per_page, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 15 } }
+        - { $ref: '#/components/parameters/IfNoneMatch' }
       responses:
         '200':
           description: OK
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            X-Cache: { $ref: '#/components/headers/XCache' }
+            X-Read-From: { $ref: '#/components/headers/XReadFrom' }
+            X-Replica: { $ref: '#/components/headers/XReplica' }
           content:
             application/json:
               schema:
@@ -202,7 +246,9 @@ paths:
                 properties:
                   data: { type: array, items: { $ref: '#/components/schemas/Product' } }
                   meta: { $ref: '#/components/schemas/PageMeta' }
+        '304': { $ref: '#/components/responses/NotModified' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
     post:
       tags: [Products]
       summary: Create a product (admin only) with image and initial stock
@@ -239,13 +285,53 @@ paths:
       summary: Product details with live stock
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
+        - { $ref: '#/components/parameters/IfNoneMatch' }
       responses:
         '200':
           description: OK
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            X-Cache: { $ref: '#/components/headers/XCache' }
+            X-Read-From: { $ref: '#/components/headers/XReadFrom' }
+            X-Replica: { $ref: '#/components/headers/XReplica' }
           content:
             application/json:
               schema: { type: object, properties: { product: { $ref: '#/components/schemas/Product' } } }
+        '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Products]
+      summary: Update a product (admin only); send only the fields to change
+      description: |
+        Writes go to the primary. After the commit the product's cache entry is removed and all
+        cached product lists are invalidated (list version bump), so the change is visible on the
+        next read and old ETags no longer match. `stock` is forwarded to the inventory service.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 150 }
+                description: { type: string, nullable: true, maxLength: 5000 }
+                price: { type: number, minimum: 0, example: 19.99 }
+                category: { type: string, maxLength: 50 }
+                stock: { type: integer, minimum: 0, maximum: 1000000 }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { type: object, properties: { product: { $ref: '#/components/schemas/Product' } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '503': { $ref: '#/components/responses/InventoryUnavailable' }
 
   /orders:
     get:

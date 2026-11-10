@@ -14,6 +14,7 @@ class EloquentCatalogApi implements CatalogApi
         }
 
         return Product::query()
+            ->useWritePdo()
             ->whereIn('id', array_unique($productIds))
             ->get(['id', 'name', 'price'])
             ->mapWithKeys(fn (Product $p) => [$p->id => ['name' => $p->name, 'price' => $p->price]])

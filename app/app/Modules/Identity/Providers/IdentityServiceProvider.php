@@ -42,7 +42,7 @@ class IdentityServiceProvider extends ModuleServiceProvider
 
             $claims = $this->app->make(JwtService::class)->verify($token);
 
-            return $claims ? User::find($claims->sub) : null;
+            return $claims ? User::query()->useWritePdo()->find($claims->sub) : null;
         });
 
         Gate::define('admin', fn (User $user) => $user->isAdmin());

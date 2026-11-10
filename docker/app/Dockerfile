@@ -8,6 +8,8 @@ RUN install-php-extensions grpc
 
 RUN install-php-extensions pdo_mysql bcmath intl zip opcache pcntl protobuf
 
+RUN install-php-extensions redis
+
 # Pinned Composer major version
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
