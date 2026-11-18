@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>متابعة الطلب لحظياً</title>
+    <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.1/dist/echo.iife.js"></script>
+    <style>
+        body { font-family: Tahoma, sans-serif; padding: 20px; background: #f4f4f4; }
+        .log { background: white; padding: 10px; margin: 5px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+<h2>📦 متابعة حالة الطلب</h2>
+<input type="text" id="orderId" placeholder="رقم الطلب" value="200023">
+<input type="text" id="token" placeholder="JWT Token الخاص بك" style="width: 400px;">
+<button onclick="startTracking()">بدء المتابعة اللحظية</button>
+<div id="logs" style="margin-top: 20px;"></div>
+
+<script>
+    let echo = null;
+
+    function log(logs, text, color) {
+        const div = document.createElement('div');
+        div.className = 'log';
+        if (color) div.style.color = color;
+        div.textContent = text;           // textContent: لا نحقن HTML من البيانات
+        logs.appendChild(div);
+    }
+
+    function startTracking() {
+        const orderId = document.getElementById('orderId').value.trim();
+        const token = document.getElementById('token').value.trim();
+        const logs = document.getElementById('logs');
+        logs.innerHTML = '';
+
+        if (echo) { echo.disconnect(); }  // ضغطة ثانية على الزر لا تكرر الاتصال
+
+        echo = new Echo({
+            broadcaster: 'pusher',
+            key: 'local-reverb-key',
+            cluster: 'mt1',   // pusher-js 8 يشترط وجود cluster حتى مع Reverb (القيمة تُتجاهل لأن wsHost محدد)
+            wsHost: window.location.hostname,
+            wsPort: 8000,
+            // لا نضع wsPath: مكتبة pusher تضيف /app/{key} وحدها، وnginx يمرر /app إلى Reverb
+            forceTLS: false,
+            enabledTransports: ['ws', 'wss'],
+            authEndpoint: '/broadcasting/auth',
+            auth: { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' } }
+        });
+
+        const conn = echo.connector.pusher.connection;
+        conn.bind('state_change', (s) => log(logs, `🔌 الاتصال: ${s.previous} ← ${s.current}`));
+        conn.bind('error', () => log(logs, '❌ فشل الاتصال بخادم WebSocket', 'red'));
+
+        echo.private(`orders.${orderId}`)
+            .subscribed(() => log(logs, `✅ تم الاشتراك بقناة الطلب #${orderId} — بانتظار التحديثات...`, 'teal'))
+            .listen('.App\\Modules\\Ordering\\Events\\OrderPlaced', (e) => {
+                log(logs, `📢 ${e.message}`, 'blue');
+            })
+            .listen('.App\\Modules\\Ordering\\Events\\OrderStatusChanged', (e) => {
+                log(logs, `🔄 تغيرت الحالة إلى: ${e.status} (${e.message})`, 'green');
+            })
+            .error(() => {
+                log(logs, '❌ رفض الاشتراك: التوكن غير صالح أو الطلب ليس لك (403/401)', 'red');
+            });
+    }
+</script>
+</body>
+</html>

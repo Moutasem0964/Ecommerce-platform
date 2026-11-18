@@ -27,6 +27,8 @@ services:
         condition: service_healthy
       mysql-replica:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks: [backend]
 
   # Laravel scheduler (runs scheduled commands, e.g. the saga cleanup)
@@ -79,6 +81,83 @@ services:
         condition: service_healthy
     networks: [backend]
 
+  # R4/R5 real-time: self-hosted WebSocket server (Laravel Reverb, Pusher-compatible)
+  reverb:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    user: www-data
+    restart: unless-stopped
+    env_file: ./app/.env
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: redis
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [backend]
+
+  # R4 worker: consumes order events and sends confirmation emails via external SMTP
+  worker:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    command: ["php", "artisan", "notifications:consume-confirmations"]
+    user: www-data
+    restart: unless-stopped
+    env_file: ./app/.env
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      INVENTORY_GRPC_TARGET: inventory:9090
+      REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_HEARTBEAT: 60
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [backend]
+
+    # Processes queued jobs: the broadcasts to Reverb (R4/R5 real-time)
+  queue:
+      build:
+        context: .
+        dockerfile: docker/app/Dockerfile
+      command: [ "php", "artisan", "queue:work", "--tries=3", "--sleep=1" ]
+      user: www-data
+      restart: unless-stopped
+      env_file: ./app/.env
+      environment:
+        DB_CONNECTION: mysql
+        DB_HOST: mysql
+        DB_PORT: 3306
+        DB_DATABASE: ${MYSQL_DATABASE}
+        DB_USERNAME: ${MYSQL_USER}
+        DB_PASSWORD: ${MYSQL_PASSWORD}
+        REDIS_HOST: redis
+      depends_on:
+        mysql:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+      networks: [ backend ]
+
   # API docs: Swagger UI for docs/openapi.yaml → http://localhost:8081
   swagger:
     image: swaggerapi/swagger-ui:v5.34.1
@@ -89,7 +168,7 @@ services:
     volumes:
       - ./docs:/docs:ro
 
-  #  Web server in front of Laravel 
+  #  Web server in front of Laravel
   web:
     image: nginx:1.28-alpine
     ports:
@@ -101,7 +180,7 @@ services:
     depends_on: [app]
     networks: [backend]
 
-  #  Inventory service (Spring Boot, gRPC) 
+  #  Inventory service (Spring Boot, gRPC)
   inventory:
     build:
       context: .
@@ -115,7 +194,7 @@ services:
         condition: service_healthy
     networks: [backend]
 
-  #  Databases 
+  #  Databases
   mysql:
     image: mysql:8.4
     command: ["--server-id=1", "--gtid-mode=ON", "--enforce-gtid-consistency=ON"]
@@ -184,6 +263,24 @@ services:
       retries: 20
     networks: [backend]
 
+  # Message broker (order events -> email worker)
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"   # management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+    networks: [backend]
+
   # Contract tooling (not started by "up"; run on demand)
   #   docker compose run --rm buf lint
   #   docker compose run --rm buf generate
@@ -199,6 +296,7 @@ volumes:
   postgres-data:
   mysql-replica-data:
   app-uploads:
+  rabbitmq-data:
 
 networks:
   backend:
