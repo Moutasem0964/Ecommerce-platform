@@ -89,6 +89,7 @@ class OrderService
             $this->inventory->reserve($order->id, array_column($items, 'quantity', 'product_id'));
         } catch (InsufficientStockException $e) {
             $order->update(['status' => OrderStatus::Rejected]);
+            $this->announce($order);
             throw $e;
         }
 
@@ -103,6 +104,7 @@ class OrderService
         } catch (Throwable $e) {
             $this->inventory->release($order->id);
             $order->update(['status' => OrderStatus::Failed]);
+            $this->announce($order);
             Log::warning('Order failed after reserve; stock released', ['order_id' => $order->id, 'error' => $e->getMessage()]);
             throw $e;
         }
