@@ -38,6 +38,7 @@ services:
       dockerfile: docker/app/Dockerfile
     command: ["php", "artisan", "schedule:work"]
     user: www-data
+    init: true
     env_file: ./app/.env
     environment:
       DB_CONNECTION: mysql
@@ -63,6 +64,7 @@ services:
       dockerfile: docker/app/Dockerfile
     command: ["php", "artisan", "health:monitor"]
     user: www-data
+    init: true
     restart: unless-stopped
     env_file: ./app/.env
     environment:
@@ -88,6 +90,7 @@ services:
       dockerfile: docker/app/Dockerfile
     command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
     user: www-data
+    init: true
     restart: unless-stopped
     env_file: ./app/.env
     environment:
@@ -112,6 +115,7 @@ services:
       dockerfile: docker/app/Dockerfile
     command: ["php", "artisan", "notifications:consume-confirmations"]
     user: www-data
+    init: true
     restart: unless-stopped
     env_file: ./app/.env
     environment:
@@ -134,29 +138,58 @@ services:
         condition: service_healthy
     networks: [backend]
 
-    # Processes queued jobs: the broadcasts to Reverb (R4/R5 real-time)
+  outbox-relay:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    command: ["php", "artisan", "messaging:relay-outbox"]
+    user: www-data
+    init: true
+    restart: unless-stopped
+    env_file: ./app/.env
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_HEARTBEAT: 60
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [backend]
+
+  # Processes queued jobs: the broadcasts to Reverb (R4/R5 real-time)
   queue:
-      build:
-        context: .
-        dockerfile: docker/app/Dockerfile
-      command: [ "php", "artisan", "queue:work", "--tries=3", "--sleep=1" ]
-      user: www-data
-      restart: unless-stopped
-      env_file: ./app/.env
-      environment:
-        DB_CONNECTION: mysql
-        DB_HOST: mysql
-        DB_PORT: 3306
-        DB_DATABASE: ${MYSQL_DATABASE}
-        DB_USERNAME: ${MYSQL_USER}
-        DB_PASSWORD: ${MYSQL_PASSWORD}
-        REDIS_HOST: redis
-      depends_on:
-        mysql:
-          condition: service_healthy
-        redis:
-          condition: service_healthy
-      networks: [ backend ]
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    command: ["php", "artisan", "queue:work", "--tries=3", "--sleep=0.25"]
+    user: www-data
+    init: true
+    restart: unless-stopped
+    env_file: ./app/.env
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: redis
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [backend]
 
   # API docs: Swagger UI for docs/openapi.yaml → http://localhost:8081
   swagger:
@@ -270,7 +303,6 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
       - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"   # management UI
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq

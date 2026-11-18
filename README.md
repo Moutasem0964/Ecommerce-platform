@@ -32,6 +32,7 @@ Spring Boot inventory service that talk over gRPC, each with its own database, a
 | `rabbitmq`  | RabbitMQ 4.1 — order events         | management UI `http://localhost:15672` |
 | `worker`    | Sends order confirmation emails     | no                         |
 | `queue`     | Laravel queue worker (broadcasts)   | no                         |
+| `outbox-relay` | Publishes the outbox to RabbitMQ | no                         |
 | `reverb`    | Laravel Reverb WebSocket server     | `ws://localhost:8000/app` (through nginx) |
 | `swagger`   | Swagger UI for the API docs         | `http://localhost:8081`    |
 
@@ -202,11 +203,13 @@ Two things happen in the background so the customer never waits for them: the co
 ```
 POST /orders ─► OrderPlaced ─► queue worker ─► Reverb ─┬─► admin.orders   (admin only)
       │                                                └─► orders.{id}    (owner or admin)
-      └─ stock reserved ─► OrderConfirmed ─► RabbitMQ  orders / order.created
+      └─ stock reserved ─► one transaction: status = confirmed + row in outbox_messages
                                                 │
-                                   notifications.order-confirmation ─► worker ─► SMTP (Mailtrap) ─► ack
-                                                │ failure (nack)
-                                   ...retry queue (TTL 10 s) ─► back to the main queue
+                              outbox-relay (every 0.5 s) ─► RabbitMQ  orders / order.created
+                                                │
+                                   notifications.order-confirmation ─► worker ─► SMTP (Mailtrap) ─► processed_messages ─► ack
+                                                │ failure
+                                   ...delay queue (per-message expiration 10 s) ─► back to the main queue
                                                 │ after 5 attempts
                                    notifications.order-confirmation.dlq   (never dropped)
 ```
@@ -215,14 +218,14 @@ POST /orders ─► OrderPlaced ─► queue worker ─► Reverb ─┬─► a
 
 | Piece | What it does | Where |
 |---|---|---|
-| Event publishing | After the stock is reserved, `OrderConfirmed` publishes a persistent JSON message (publisher confirm, milliseconds) and the API answers. A rejected or failed order sends no email. If the broker is down the order still succeeds and the error is logged. | `Notifications/Listeners/PublishOrderConfirmation`, `Shared/Messaging/RabbitMq` |
-| Worker | The `worker` container takes one message at a time and sends the email through an external SMTP service (Mailtrap). It acknowledges the message only after the email was sent. | `Notifications/Console/ConsumeOrderConfirmations` |
+| Event publishing (outbox) | After the stock is reserved, the status change to `confirmed` and the message row in `outbox_messages` are written in **one transaction**: both or neither. The `outbox-relay` container publishes pending rows (persistent, publisher confirm) and marks them published. If RabbitMQ is down, rows wait and go out when it is back. A rejected or failed order writes no message. | `Ordering/Services/OrderService`, `Notifications/Listeners/PublishOrderConfirmation`, `Shared/Messaging/Outbox`, `Shared/Messaging/OutboxRelay` |
+| Worker | The `worker` container takes one message at a time and sends the email through an external SMTP service (Mailtrap). It records the message id in `processed_messages` and only then acknowledges. A message whose id is already there is acknowledged without sending, so a redelivery never sends a second email. `docker compose stop worker` finishes the current message and exits cleanly. | `Notifications/Console/ConsumeOrderConfirmations` |
 | No lost messages | Durable queues, persistent messages, manual ack. If the worker is stopped or crashes, the messages stay in the queue and are delivered when it starts again. | `RabbitMq::declareTopology` |
-| Retries | A failure is rejected into the retry exchange, waits in a queue with a 10 s TTL and returns to the main queue. The attempt number comes from RabbitMQ's own `x-death` header, so it survives worker restarts. | `RabbitMq::declareTopology` |
+| Retries | A failure is republished (with publisher confirm) to the delay queue with a per-message expiration, then acknowledged; when it expires it returns to the main queue. The attempt number travels in the message header `x-attempts`. Because the delay lives on the message, changing `ORDER_EMAIL_RETRY_TTL_MS` needs no queue changes. | `ConsumeOrderConfirmations`, `RabbitMq::declareTopology` |
 | Dead-letter queue | After 5 attempts the message is copied (with publisher confirm) to its own queue, `notifications.order-confirmation.dlq`, and only then acknowledged. `php artisan notifications:replay-dlq` puts every parked message back. | `ConsumeOrderConfirmations`, `ReplayDeadLetters` |
-| Live updates | `OrderPlaced` and `OrderStatusChanged` are broadcast by the `queue` container to Reverb, which nginx exposes on `/app`. | `Ordering/Events`, `docker/nginx/default.conf` |
+| Live updates | `OrderPlaced` (`order.placed`) and `OrderStatusChanged` (`order.status-changed`) are broadcast by the `queue` container to Reverb, which nginx exposes on `/app/`. In the main UI, after login, a customer follows the orders in "طلباتي" and an admin follows `admin.orders`: a toast appears and the list and the open order refresh without reloading the page. | `Ordering/Events`, `resources/views/welcome.blade.php`, `docker/nginx/default.conf` |
 | Authorization | `orders.{id}`: the order's owner or an admin. `admin.orders`: admins only. Both are checked on `POST /broadcasting/auth` with the same JWT as the API. | `routes/channels.php` |
-| Demo pages | `http://localhost:8000/admin.html` (new orders) and `/tracking.html` (one order). Paste a JWT, press the button, wait for "subscribed". | `app/public` |
+| Debug pages | `http://localhost:8000/admin.html` and `/tracking.html` show the raw events. Paste a JWT, press the button, wait for "subscribed". | `app/public` |
 
 ### Switches (`app/.env`)
 
@@ -231,9 +234,10 @@ POST /orders ─► OrderPlaced ─► queue worker ─► Reverb ─┬─► a
 | `ORDER_EMAIL_FAIL_SENDING` | `false` | DEMO ONLY: make every send fail, to show the retries and the DLQ |
 | `ORDER_EMAIL_RETRY_TTL_MS` | `10000` | Wait between two attempts |
 | `ORDER_EMAIL_MAX_ATTEMPTS` | `5` | Attempts before the message goes to the DLQ |
+| `OUTBOX_POLL_MS` | `500` | How often the relay looks for pending outbox rows |
 | `MAIL_*` | Mailtrap | Credentials of the external SMTP service |
 
-Apply a change with `docker compose up -d --force-recreate worker`.
+Apply a change with `docker compose up -d --force-recreate worker outbox-relay`.
 
 ### Demo: the four proofs
 
@@ -241,17 +245,19 @@ Log in as `admin@test.com` / `sara@test.com` (password `secret123`) and keep the
 
 | Proof | How |
 |---|---|
-| A new order shows up on the admin dashboard immediately | Open `admin.html` with the admin token, then `POST /api/v1/orders` as Sara. |
-| The admin's approval shows up on the customer's page immediately | Open `tracking.html` with Sara's token and her order id, wait for "subscribed", then `PATCH /api/v1/orders/{id}/status` as admin with `{"status":"shipped"}`. |
+| A new order shows up on the admin dashboard immediately | Two browser windows (one private): the admin on "طلباتي" (all orders), Sara buys a product. The admin gets a toast and the order appears in the list. |
+| The admin's approval shows up on the customer's page immediately | Sara on "طلباتي" (or with the order details open), the admin ships the order. Sara gets a toast and the status changes in place. |
 | Stopping the worker loses no email | `docker compose stop worker`, place 3 orders, `docker compose exec rabbitmq rabbitmqctl list_queues name messages_ready` shows 3 ready, then `docker compose start worker`: 3 emails are sent. |
 | Retries and the DLQ | Set `ORDER_EMAIL_FAIL_SENDING=true`, recreate `worker`, place an order: `attempt 1/5` … `5/5`, then `parked in DLQ` (RabbitMQ UI: `notifications.order-confirmation.dlq` = 1). Set it back to `false` and run `docker compose exec worker php artisan notifications:replay-dlq`. |
 
-Access control: `tracking.html` with another customer's token, or `admin.html` with a customer token, shows "subscription rejected".
+| RabbitMQ down loses no email (outbox) | `docker compose stop rabbitmq`, place an order (it succeeds), `docker compose logs outbox-relay` shows `cannot publish yet`, then `docker compose start rabbitmq`: the relay publishes it and the email is sent. |
+
+Access control: `tracking.html` with another customer's token, or `admin.html` with a customer token, shows "subscription rejected". `ci.ps1` checks it on `/broadcasting/auth` (owner 200, other customer 403, customer on `admin.orders` 403, no token 401), and checks that each order's message reaches the outbox, RabbitMQ and the worker.
 
 ### Delivery guarantees and limits
 
-- **At least once.** If the worker dies after the email was sent but before the ack, the email is sent twice.
-- **No outbox.** If RabbitMQ is unreachable at the moment of publishing, the order succeeds and the email is not sent (the error is logged).
+- **At least once, without duplicates in practice.** The relay may publish a row twice (it crashed after publishing, before marking it) and RabbitMQ may redeliver; `processed_messages` makes the worker skip both. The one window left is a crash between the SMTP send and writing `processed_messages`.
+- **Outbox.** A confirmed order always has its message, even if RabbitMQ is down at that moment; it leaves when the broker is back. Published rows are deleted after a day.
 - Mailtrap's free plan limits emails per second; the retries absorb that (several orders placed together may need 2 or 3 attempts).
 
 ## Connecting a database tool (DBeaver, IntelliJ, TablePlus)

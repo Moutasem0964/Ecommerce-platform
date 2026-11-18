@@ -53,8 +53,11 @@
 
         echo.private('admin.orders')
             .subscribed(() => log(logs, '✅ تم الاشتراك بقناة المسؤول — بانتظار الطلبات الجديدة...', 'teal'))
-            .listen('.App\\Modules\\Ordering\\Events\\OrderPlaced', (e) => {
+            .listen('.order.placed', (e) => {
                 log(logs, `🔔 طلب جديد #${e.order_id} من ${e.user_name} (المجموع: ${e.total})`, 'purple');
+            })
+            .listen('.order.status-changed', (e) => {
+                log(logs, `🔄 الطلب #${e.order_id} صار: ${e.status}`, 'green');
             })
             .error(() => {
                 log(logs, '❌ رفض الاشتراك: التوكن غير صالح أو أنت لست مسؤولاً', 'red');

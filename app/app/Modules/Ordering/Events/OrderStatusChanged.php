@@ -18,9 +18,17 @@ class OrderStatusChanged implements ShouldBroadcast
     ) {
     }
 
-    public function broadcastOn(): PrivateChannel
+    public function broadcastOn(): array
     {
-        return new PrivateChannel("orders.{$this->orderId}");
+        return [
+            new PrivateChannel("orders.{$this->orderId}"),
+            new PrivateChannel('admin.orders'),
+        ];
+    }
+
+    public function broadcastAs(): string
+    {
+        return 'order.status-changed';
     }
 
     public function broadcastWith(): array

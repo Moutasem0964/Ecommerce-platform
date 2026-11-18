@@ -55,10 +55,10 @@
 
         echo.private(`orders.${orderId}`)
             .subscribed(() => log(logs, `✅ تم الاشتراك بقناة الطلب #${orderId} — بانتظار التحديثات...`, 'teal'))
-            .listen('.App\\Modules\\Ordering\\Events\\OrderPlaced', (e) => {
+            .listen('.order.placed', (e) => {
                 log(logs, `📢 ${e.message}`, 'blue');
             })
-            .listen('.App\\Modules\\Ordering\\Events\\OrderStatusChanged', (e) => {
+            .listen('.order.status-changed', (e) => {
                 log(logs, `🔄 تغيرت الحالة إلى: ${e.status} (${e.message})`, 'green');
             })
             .error(() => {

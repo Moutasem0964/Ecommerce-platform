@@ -23,7 +23,7 @@ class SecurityHeaders
         if ($request->is('api/*')) {
             $response->headers->set('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
         } else {
-            $response->headers->set('Content-Security-Policy', "default-src 'self' 'unsafe-inline' https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https: data:; connect-src 'self' http://localhost:* http://127.0.0.1:* https:; img-src 'self' data: https:; frame-ancestors 'none'");
+            $response->headers->set('Content-Security-Policy', "default-src 'self' 'unsafe-inline' https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https: data:; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https: wss:; img-src 'self' data: https:; frame-ancestors 'none'");
         }
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');

@@ -25,9 +25,9 @@ return [
 
         'apps' => [
             [
-                'app_id' => 'ecommerce-local',
-                'key' => 'local-reverb-key',
-                'secret' => 'local-reverb-secret',
+                'app_id' => env('REVERB_APP_ID'),
+                'key' => env('REVERB_APP_KEY'),
+                'secret' => env('REVERB_APP_SECRET'),
                 'allowed_origins' => ['*'],
                 'ping_interval' => 60,
                 'activity_timeout' => 30,

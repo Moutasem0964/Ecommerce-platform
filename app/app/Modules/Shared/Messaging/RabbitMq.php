@@ -3,6 +3,7 @@
 namespace App\Modules\Shared\Messaging;
 
 use Illuminate\Support\Str;
+use RuntimeException;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPSocketConnection;
 use PhpAmqpLib\Message\AMQPMessage;
@@ -16,7 +17,7 @@ class RabbitMq
 
     public function channel(): AMQPChannel
     {
-        if ($this->channel?->isConnected()) {
+        if ($this->channel?->is_open() && $this->connection?->isConnected()) {
             return $this->channel;
         }
 
@@ -36,6 +37,7 @@ class RabbitMq
 
         $this->channel = $this->connection->channel();
         $this->declareTopology($this->channel);
+        $this->channel->set_nack_handler(fn () => throw new RuntimeException('RabbitMQ refused the message.'));
         $this->channel->confirm_select();
 
         return $this->channel;
@@ -71,17 +73,28 @@ class RabbitMq
         ]));
         $channel->queue_bind($name('order_confirmation_queue'), $name('orders_exchange'), $name('order_created_key'));
 
-        // Retry queue: holds a failed message for retry_ttl_ms, then dead-letters it back.
+        // Retry queue: each failed message carries its own expiration, then dead-letters back.
         $channel->queue_declare($name('retry_queue'), false, true, false, false, false, new AMQPTable([
-            'x-message-ttl' => (int) config('messaging.retry_ttl_ms'),
             'x-dead-letter-exchange' => $name('orders_exchange'),
             'x-dead-letter-routing-key' => $name('order_created_key'),
         ]));
-        $channel->queue_bind($name('retry_queue'), $name('retry_exchange'), $name('order_created_key'));
+        $channel->queue_bind($name('retry_queue'), $name('retry_exchange'), $name('retry_key'));
 
         // Final parking lot for permanently failed messages.
         $channel->queue_declare($name('dlq_queue'), false, true, false, false, false);
         $channel->queue_bind($name('dlq_queue'), $name('dlq_exchange'), $name('order_created_key'));
+    }
+
+    public function reset(): void
+    {
+        try {
+            $this->channel?->close();
+            $this->connection?->close();
+        } catch (Throwable) {
+        }
+
+        $this->channel = null;
+        $this->connection = null;
     }
 
     public function __destruct()
