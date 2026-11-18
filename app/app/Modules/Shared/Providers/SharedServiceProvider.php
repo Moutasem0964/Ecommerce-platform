@@ -6,6 +6,7 @@ use App\Modules\Shared\Cache\CircuitBreakerFailoverStore;
 use App\Modules\Shared\Console\MonitorHealth;
 use App\Modules\Shared\Http\Middleware\ETag;
 use App\Modules\Shared\Http\Middleware\ReadYourWrites;
+use App\Modules\Shared\Messaging\RabbitMq;
 use App\Modules\Shared\Services\ReplicaHealth;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class SharedServiceProvider extends ModuleServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/read_your_writes.php', 'read_your_writes');
         $this->mergeConfigFrom(__DIR__.'/../config/replica.php', 'replica');
         $this->mergeConfigFrom(__DIR__.'/../config/cache_breaker.php', 'cache_breaker');
+        $this->mergeConfigFrom(__DIR__.'/../config/messaging.php', 'messaging');
 
         $this->app->booting(function () {
             Cache::extend('failover-breaker', fn ($app, array $config) => Cache::repository(
@@ -37,6 +39,7 @@ class SharedServiceProvider extends ModuleServiceProvider
         });
 
         $this->app->scoped(ReplicaHealth::class);
+        $this->app->scoped(RabbitMq::class);
     }
 
     public function boot(): void

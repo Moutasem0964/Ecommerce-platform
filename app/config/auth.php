@@ -46,6 +46,12 @@ return [
         // Stateless API auth: "Authorization: Bearer <JWT>" (driver registered in AppServiceProvider)
         'api' => [
             'driver' => 'jwt',
+            'provider' => 'users',
+        ],
+
+        'jwt' => [
+            'driver' => 'jwt',
+            'provider' => 'users',
         ],
     ],
 

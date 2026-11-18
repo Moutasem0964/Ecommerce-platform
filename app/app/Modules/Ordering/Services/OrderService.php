@@ -9,6 +9,8 @@ use App\Modules\Inventory\Exceptions\InsufficientStockException;
 use App\Modules\Inventory\Exceptions\InventoryUnavailableException;
 use App\Modules\Ordering\Data\StaleOrderResult;
 use App\Modules\Ordering\Enums\OrderStatus;
+use App\Modules\Ordering\Events\OrderConfirmed;
+use App\Modules\Ordering\Events\OrderPlaced;
 use App\Modules\Ordering\Events\OrderStatusChanged;
 use App\Modules\Ordering\Exceptions\InvalidStatusTransitionException;
 use App\Modules\Ordering\Models\Order;
@@ -74,10 +76,14 @@ class OrderService
                 'status' => OrderStatus::Pending,
                 'total' => $total,
             ]);
-            $order->items()->createMany($lines);
+            $order->setRelation('items', $order->items()->createMany($lines));
 
             return $order;
         });
+
+        // R4: broadcast "new order" to the admin dashboard and the customer right away.
+        // This does NOT send the confirmation email: that waits until the stock is reserved (below).
+        OrderPlaced::dispatch(...$this->eventPayload($user, $order));
 
         try {
             $this->inventory->reserve($order->id, array_column($items, 'quantity', 'product_id'));
@@ -97,6 +103,10 @@ class OrderService
             Log::warning('Order failed after reserve; stock released', ['order_id' => $order->id, 'error' => $e->getMessage()]);
             throw $e;
         }
+
+        // R4: only a confirmed order reaches this line (rejected/failed orders threw above),
+        // so only now do we publish to RabbitMQ and let the worker send the confirmation email.
+        OrderConfirmed::dispatch(...$this->eventPayload($user, $order));
 
         $this->announce($order);
 
@@ -148,6 +158,29 @@ class OrderService
         }
 
         return $results;
+    }
+
+    /**
+     * The seven constructor arguments shared by OrderPlaced and OrderConfirmed (same order as the constructors).
+     *
+     * @return array{0: int, 1: int, 2: string, 3: string, 4: string, 5: list<array<string, mixed>>, 6: string}
+     */
+    private function eventPayload(User $user, Order $order): array
+    {
+        return [
+            $order->id,
+            $user->id,
+            $user->email,
+            $user->name,
+            (string) $order->total,
+            $order->items->map(fn ($item) => [
+                'product_id' => $item->product_id,
+                'name' => $item->product_name,
+                'quantity' => $item->quantity,
+                'unit_price' => (string) $item->unit_price,
+            ])->all(),
+            $order->created_at->toIso8601String(),
+        ];
     }
 
     private function announce(Order $order): void

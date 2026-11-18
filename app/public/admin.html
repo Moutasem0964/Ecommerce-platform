@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>لوحة تحكم المسؤول</title>
+    <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.1/dist/echo.iife.js"></script>
+    <style>
+        body { font-family: Tahoma, sans-serif; padding: 20px; background: #e8f4f8; }
+        .log { background: white; padding: 10px; margin: 5px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+<h2>🛡️ لوحة مراقبة الطلبات الجديدة</h2>
+<input type="text" id="token" placeholder="JWT Token الخاص بالأدمن" style="width: 400px;">
+<button onclick="startAdminMonitor()">بدء المراقبة</button>
+<div id="logs" style="margin-top: 20px;"></div>
+
+<script>
+    let echo = null;
+
+    function log(logs, text, color) {
+        const div = document.createElement('div');
+        div.className = 'log';
+        if (color) div.style.color = color;
+        div.textContent = text;
+        logs.appendChild(div);
+    }
+
+    function startAdminMonitor() {
+        const token = document.getElementById('token').value.trim();
+        const logs = document.getElementById('logs');
+        logs.innerHTML = '';
+
+        if (echo) { echo.disconnect(); }
+
+        echo = new Echo({
+            broadcaster: 'pusher',
+            key: 'local-reverb-key',
+            cluster: 'mt1',   // pusher-js 8 يشترط وجود cluster حتى مع Reverb (القيمة تُتجاهل لأن wsHost محدد)
+            wsHost: window.location.hostname,
+            wsPort: 8000,
+            // لا نضع wsPath (انظر الشرح في tracking.html)
+            forceTLS: false,
+            enabledTransports: ['ws', 'wss'],
+            authEndpoint: '/broadcasting/auth',
+            auth: { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' } }
+        });
+
+        const conn = echo.connector.pusher.connection;
+        conn.bind('state_change', (s) => log(logs, `🔌 الاتصال: ${s.previous} ← ${s.current}`));
+        conn.bind('error', () => log(logs, '❌ فشل الاتصال بخادم WebSocket', 'red'));
+
+        echo.private('admin.orders')
+            .subscribed(() => log(logs, '✅ تم الاشتراك بقناة المسؤول — بانتظار الطلبات الجديدة...', 'teal'))
+            .listen('.App\\Modules\\Ordering\\Events\\OrderPlaced', (e) => {
+                log(logs, `🔔 طلب جديد #${e.order_id} من ${e.user_name} (المجموع: ${e.total})`, 'purple');
+            })
+            .error(() => {
+                log(logs, '❌ رفض الاشتراك: التوكن غير صالح أو أنت لست مسؤولاً', 'red');
+            });
+    }
+</script>
+</body>
+</html>

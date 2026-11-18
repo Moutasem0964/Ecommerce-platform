@@ -8,7 +8,7 @@ RUN install-php-extensions grpc
 
 RUN install-php-extensions pdo_mysql bcmath intl zip opcache pcntl protobuf
 
-RUN install-php-extensions redis
+RUN install-php-extensions redis sockets
 
 # Pinned Composer major version
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
@@ -31,7 +31,7 @@ RUN --mount=type=cache,target=/root/.composer/cache \
 
 # 2) The code, then the optimized class map
 COPY app/ ./
-RUN composer dump-autoload --optimize --no-interaction \
+RUN BROADCAST_CONNECTION=null composer dump-autoload --optimize --no-interaction \
     && mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views \
                 storage/logs storage/app/public storage/keys \
     && ln -sfn /var/www/html/storage/app/public public/storage \
