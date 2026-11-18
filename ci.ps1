@@ -18,6 +18,18 @@ function Call($Method, $Url, $Headers = @{}, $Body = $null) {
     }
 }
 
+function Sql($query) {
+    return ([string]($query | docker compose exec -T mysql sh -c 'MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysql -N -uroot $MYSQL_DATABASE' 2>$null)).Trim()
+}
+
+function WaitFor($seconds, [scriptblock]$condition) {
+    for ($i = 0; $i -lt $seconds; $i++) {
+        if (& $condition) { return $true }
+        Start-Sleep -Seconds 1
+    }
+    return [bool](& $condition)
+}
+
 function Expect($name, $actual, $expected) {
     if ($actual -eq $expected) {
         Write-Host ("  PASS  {0}  ({1})" -f $name, $actual) -ForegroundColor Green
@@ -162,6 +174,22 @@ if ($login.Code -eq 200) {
             Expect "Notification created by event listener" $latest.order_id $order.id
             $mine = ((Call GET "$base/orders" $auth).Body | ConvertFrom-Json).data[0]
             Expect "Read-your-writes: new order listed"    $mine.id $order.id
+
+            $wsAuth = "http://127.0.0.1:8000/broadcasting/auth"
+            $ownChannel = @{ socket_id = "1234.5678"; channel_name = "private-orders.$($order.id)" } | ConvertTo-Json -Compress
+            $adminChannel = '{"socket_id":"1234.5678","channel_name":"private-admin.orders"}'
+            Expect "Realtime: owner joins the order channel"        (Call POST $wsAuth $auth $ownChannel).Code 200
+            Expect "Realtime: admin joins the admin channel"        (Call POST $wsAuth $adminAuth $adminChannel).Code 200
+            Expect "Realtime: customer kept out of admin channel"   (Call POST $wsAuth $auth $adminChannel).Code 403
+            $otherLogin = Call POST "$base/auth/login" @{ Accept = "application/json" } '{"email":"hacker@test.com","password":"secret123"}'
+            $otherAuth = @{ Authorization = "Bearer " + ($otherLogin.Body | ConvertFrom-Json).access_token; Accept = "application/json" }
+            Expect "Realtime: other customer kept out of the order" (Call POST $wsAuth $otherAuth $ownChannel).Code 403
+            Expect "Realtime: no token -> 401"                      (Call POST $wsAuth @{ Accept = "application/json" } $ownChannel).Code 401
+
+            $messageId = "order-$($order.id)"
+            Expect "Outbox: message written with the order"        (Sql "SELECT COUNT(*) FROM outbox_messages WHERE message_id = '$messageId';") "1"
+            Expect "Outbox: relay published it to RabbitMQ"         (WaitFor 15 { (Sql "SELECT COUNT(*) FROM outbox_messages WHERE message_id = '$messageId' AND published_at IS NOT NULL;") -eq "1" }) $true
+            Expect "Worker: confirmation email processed once"      (WaitFor 30 { (Sql "SELECT COUNT(*) FROM processed_messages WHERE message_id = '$messageId';") -eq "1" }) $true
         }
 
         $first = Call GET "$base/products/$productId"

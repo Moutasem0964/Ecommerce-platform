@@ -96,17 +96,16 @@ class OrderService
             if (config('orders.fail_after_reserve')) {
                 throw new RuntimeException('Simulated failure after reserving stock (ORDERS_FAIL_AFTER_RESERVE).');
             }
-            $order->update(['status' => OrderStatus::Confirmed]);
+            DB::transaction(function () use ($user, $order) {
+                $order->update(['status' => OrderStatus::Confirmed]);
+                OrderConfirmed::dispatch(...$this->eventPayload($user, $order));
+            });
         } catch (Throwable $e) {
             $this->inventory->release($order->id);
             $order->update(['status' => OrderStatus::Failed]);
             Log::warning('Order failed after reserve; stock released', ['order_id' => $order->id, 'error' => $e->getMessage()]);
             throw $e;
         }
-
-        // R4: only a confirmed order reaches this line (rejected/failed orders threw above),
-        // so only now do we publish to RabbitMQ and let the worker send the confirmation email.
-        OrderConfirmed::dispatch(...$this->eventPayload($user, $order));
 
         $this->announce($order);
 

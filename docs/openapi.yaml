@@ -29,6 +29,7 @@ tags:
   - name: Products
   - name: Orders
   - name: Notifications
+  - name: Realtime
 
 components:
   securitySchemes:
@@ -471,3 +472,33 @@ paths:
               schema: { type: object, properties: { notification: { $ref: '#/components/schemas/Notification' } } }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /broadcasting/auth:
+    servers:
+      - url: http://localhost:8000
+        description: Not under /api/v1
+    post:
+      tags: [Realtime]
+      summary: Authorize a private WebSocket channel (Laravel Reverb, Pusher protocol)
+      description: |
+        Called by Laravel Echo before it joins a private channel. `orders.{id}`: the order's owner or an admin.
+        `admin.orders`: admins only. Events: `order.placed` and `order.status-changed`.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [socket_id, channel_name]
+              properties:
+                socket_id: { type: string, example: "1234.5678" }
+                channel_name: { type: string, example: private-orders.200021 }
+      responses:
+        '200':
+          description: Signed authorization for Reverb
+          content:
+            application/json:
+              schema: { type: object, properties: { auth: { type: string, example: "local-reverb-key:4f8c…" } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }

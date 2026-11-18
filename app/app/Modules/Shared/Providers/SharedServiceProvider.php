@@ -4,6 +4,7 @@ namespace App\Modules\Shared\Providers;
 
 use App\Modules\Shared\Cache\CircuitBreakerFailoverStore;
 use App\Modules\Shared\Console\MonitorHealth;
+use App\Modules\Shared\Console\RelayOutbox;
 use App\Modules\Shared\Http\Middleware\ETag;
 use App\Modules\Shared\Http\Middleware\ReadYourWrites;
 use App\Modules\Shared\Messaging\RabbitMq;
@@ -47,7 +48,7 @@ class SharedServiceProvider extends ModuleServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
 
         if ($this->app->runningInConsole()) {
-            $this->commands([MonitorHealth::class]);
+            $this->commands([MonitorHealth::class, RelayOutbox::class]);
         }
 
         Route::aliasMiddleware('etag', ETag::class);

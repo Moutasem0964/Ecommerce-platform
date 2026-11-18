@@ -6,6 +6,8 @@
     <title>سوق التقنية</title>
     <!-- استيراد خط تجوال العربي و Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.1/dist/echo.iife.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
@@ -570,6 +572,60 @@
         let instantCheckoutProduct = null;
         let cartItems = [];
 
+        const REVERB_KEY = @json(config('broadcasting.connections.reverb.key'));
+        const REALTIME_STATUS_LABELS = { pending: 'قيد الانتظار', confirmed: 'مؤكد', shipped: 'قيد الشحن', delivered: 'تم التسليم', cancelled: 'ملغي', failed: 'فشل المعالجة', rejected: 'مرفوض' };
+        let realtime = null;
+        const watchedOrders = new Set();
+        let openOrderId = null;
+
+        function connectRealtime() {
+            disconnectRealtime();
+            if (!sessionUser.token || !REVERB_KEY || typeof Echo === 'undefined') return;
+
+            realtime = new Echo({
+                broadcaster: 'pusher',
+                key: REVERB_KEY,
+                cluster: 'mt1',
+                wsHost: window.location.hostname,
+                wsPort: window.location.port ? Number(window.location.port) : 80,
+                forceTLS: false,
+                enabledTransports: ['ws', 'wss'],
+                authEndpoint: '/broadcasting/auth',
+                auth: { headers: { 'Authorization': `Bearer ${sessionUser.token}`, 'Accept': 'application/json' } }
+            });
+
+            if (sessionUser.role === 'admin') {
+                realtime.private('admin.orders')
+                    .listen('.order.placed', (e) => onRealtimeOrderEvent(e, `طلب جديد #${e.order_id} من ${e.user_name} بقيمة $${e.total}`))
+                    .listen('.order.status-changed', (e) => onRealtimeOrderEvent(e, `الطلب #${e.order_id} أصبح: ${REALTIME_STATUS_LABELS[e.status] || e.status}`));
+            }
+        }
+
+        function disconnectRealtime() {
+            if (realtime) realtime.disconnect();
+            realtime = null;
+            watchedOrders.clear();
+        }
+
+        function watchOrders(orderIds) {
+            if (!realtime || sessionUser.role === 'admin') return;
+
+            orderIds.forEach((id) => {
+                if (watchedOrders.has(id)) return;
+                watchedOrders.add(id);
+                realtime.private(`orders.${id}`)
+                    .listen('.order.status-changed', (e) => onRealtimeOrderEvent(e, e.message));
+            });
+        }
+
+        function onRealtimeOrderEvent(e, text) {
+            showToastNotification(text, 'info');
+
+            if (document.getElementById('page-orders')?.classList.contains('active')) loadOrdersData();
+            if (openOrderId === e.order_id && document.getElementById('modalOrderDetails').classList.contains('active')) openOrderDetails(e.order_id);
+            if (sessionUser.role !== 'admin') loadNotificationsList();
+        }
+
         // التهيئة عند تحميل الصفحة
         document.addEventListener('DOMContentLoaded', async () => {
             switchTab('catalog', false);
@@ -583,6 +639,7 @@
                 sessionUser.name = localStorage.getItem('store_name') || 'مستخدم';
                 sessionUser.role = localStorage.getItem('store_role') || 'customer';
                 updateAuthInterface();
+                connectRealtime();
             } else {
                 // الوضع الافتراضي عند عدم وجود جلسة محفوظة
                 sessionUser = { token: '', email: '', name: '', role: 'guest' };
@@ -773,6 +830,7 @@
 
                     closeLoginModal();
                     updateAuthInterface();
+                    connectRealtime();
                     showToastNotification(`مرحباً بك مجدداً، ${sessionUser.name}`, 'success');
                     loadCatalogProducts(currentActiveCategory);
                     loadNotificationsList();
@@ -788,6 +846,7 @@
         }
 
         function logoutUser() {
+            disconnectRealtime();
             sessionUser = { token: '', email: '', name: '', role: 'guest' };
             localStorage.removeItem('store_token');
             localStorage.removeItem('store_email');
@@ -1205,6 +1264,7 @@
                 const json = await res.json();
                 if (res.ok) {
                     renderOrdersTableRows(json.data || []);
+                    watchOrders((json.data || []).map((o) => o.id));
 
                     if (sessionUser.role === 'admin') {
                         document.getElementById('ordersMainTitle').innerText = 'كافة طلبات المتجر (صلاحية المشرف)';
@@ -1306,6 +1366,7 @@
         // واجهة عرض وتفاصيل الطلب (Show Order Details)
         // ========================================================
         async function openOrderDetails(orderId) {
+            openOrderId = orderId;
             if (!sessionUser.token) {
                 showToastNotification('يرجى تسجيل الدخول أولاً لعرض تفاصيل الطلب', 'info');
                 openLoginModal();
@@ -1421,6 +1482,7 @@
         }
 
         function closeOrderDetailsModal() {
+            openOrderId = null;
             document.getElementById('modalOrderDetails').classList.remove('active');
         }
 
