@@ -27,8 +27,6 @@ services:
         condition: service_healthy
       mysql-replica:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     networks: [backend]
 
   # Laravel scheduler (runs scheduled commands, e.g. the saga cleanup)
