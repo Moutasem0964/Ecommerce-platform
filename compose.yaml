@@ -7,6 +7,7 @@ services:
     build:
       context: .
       dockerfile: docker/app/Dockerfile
+    image: ecommerce-platform-app
     env_file: ./app/.env            # runtime config & secrets (not baked into the image)
     volumes:
       - ./app/storage/keys:/var/www/html/storage/keys        # JWT keys (secrets)
@@ -27,13 +28,14 @@ services:
         condition: service_healthy
       mysql-replica:
         condition: service_healthy
+    deploy:
+      replicas: 3
     networks: [backend]
 
   # Laravel scheduler (runs scheduled commands, e.g. the saga cleanup)
   scheduler:
-    build:
-      context: .
-      dockerfile: docker/app/Dockerfile
+    image: ecommerce-platform-app
+    pull_policy: never
     command: ["php", "artisan", "schedule:work"]
     user: www-data
     init: true
@@ -57,9 +59,8 @@ services:
     networks: [backend]
 
   health-monitor:
-    build:
-      context: .
-      dockerfile: docker/app/Dockerfile
+    image: ecommerce-platform-app
+    pull_policy: never
     command: ["php", "artisan", "health:monitor"]
     user: www-data
     init: true
@@ -83,9 +84,8 @@ services:
 
   # R4/R5 real-time: self-hosted WebSocket server (Laravel Reverb, Pusher-compatible)
   reverb:
-    build:
-      context: .
-      dockerfile: docker/app/Dockerfile
+    image: ecommerce-platform-app
+    pull_policy: never
     command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
     user: www-data
     init: true
@@ -108,13 +108,14 @@ services:
 
   # R4 worker: consumes order events and sends confirmation emails via external SMTP
   worker:
-    build:
-      context: .
-      dockerfile: docker/app/Dockerfile
+    image: ecommerce-platform-app
+    pull_policy: never
     command: ["php", "artisan", "notifications:consume-confirmations"]
     user: www-data
     init: true
     restart: unless-stopped
+    deploy:
+      replicas: 3
     env_file: ./app/.env
     environment:
       DB_CONNECTION: mysql
@@ -137,9 +138,8 @@ services:
     networks: [backend]
 
   outbox-relay:
-    build:
-      context: .
-      dockerfile: docker/app/Dockerfile
+    image: ecommerce-platform-app
+    pull_policy: never
     command: ["php", "artisan", "messaging:relay-outbox"]
     user: www-data
     init: true
@@ -166,9 +166,8 @@ services:
 
   # Processes queued jobs: the broadcasts to Reverb (R4/R5 real-time)
   queue:
-    build:
-      context: .
-      dockerfile: docker/app/Dockerfile
+    image: ecommerce-platform-app
+    pull_policy: never
     command: ["php", "artisan", "queue:work", "--tries=3", "--sleep=0.25"]
     user: www-data
     init: true
