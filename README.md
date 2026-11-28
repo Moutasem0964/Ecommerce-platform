@@ -58,7 +58,7 @@ You do **not** need PHP, Composer, Java or Maven installed — they all run insi
 Run from the repo root in Windows PowerShell:
 
 ```powershell
-git clone https://github.com/Moutasem0964/Ecommerce-platform.git
+git clone https://github.com/Moutasem-Qassas/Ecommerce-platform.git
 cd Ecommerce-platform
 .\ci.ps1
 ```
